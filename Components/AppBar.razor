@@ -1,0 +1,24 @@
+﻿<MudAppBar Elevation="3" Color="Color.Dark">
+    <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                   OnClick="async () => await OnSidebarToggled.InvokeAsync()" />
+    <h2 style="color: #fff;">Vampire Survivor Leaderboards</h2>
+    <MudAppBarSpacer />
+    <AuthorizeView>
+        <Authorized>
+            <span>Hello, @context.User.Identity.Name! - </span>
+            <a href="Account/Logout" style="color: white;"> Log out</a>
+        </Authorized>
+        <NotAuthorized>
+            <a href="Account/Login" style="color: white;"> Log in</a>
+        </NotAuthorized>
+    </AuthorizeView>
+
+    @if (_isLightMode)
+    {
+        <MudIconButton Icon="@Icons.Material.Filled.Brightness4" Color="Color.Inherit" OnClick="ToggleTheme" />
+    }
+    else
+    {
+        <MudIconButton Icon="@Icons.Material.Filled.Brightness5" Color="Color.Inherit" OnClick="ToggleTheme" />
+    }
+</MudAppBar>

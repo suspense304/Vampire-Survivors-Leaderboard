@@ -1,0 +1,72 @@
+﻿@using System.Security.Claims
+@using Models
+
+@inject vswebsiteContext _context
+
+<MudDrawer @bind-Open="SideBarOpen" Elevation="1">
+    <MudDrawerHeader>
+        <img src="/images/logo.png" style="border: none; width: 100%;" />
+    </MudDrawerHeader>
+    <MudNavMenu>
+        <MudNavLink Href="/" Icon="@Icons.Filled.Home">Dashboard</MudNavLink>
+        <MudNavLink Href="/Leaderboard" Icon="@Icons.Filled.Leaderboard">Leaderboard</MudNavLink>
+        <hr />
+        <MudNavLink Href="/Submit" Icon="@Icons.Filled.AddTask">Submit</MudNavLink>
+        <hr />
+        @if (isAdmin)
+        {
+            <MudNavLink Href="/Approve" Icon="@Icons.Filled.Approval">Approve</MudNavLink>
+        }
+    </MudNavMenu>
+</MudDrawer>
+
+@code {
+    bool loggedIn;
+    bool isAdmin;
+
+    public string id;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    [Parameter]
+    public bool SideBarOpen { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        loggedIn = user.Identity.IsAuthenticated;
+
+        if (loggedIn)
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
+            if (chkUser != null) isAdmin = chkUser.Admin;
+
+            var userName = user.FindFirstValue(ClaimTypes.Name);
+            var identity = (ClaimsIdentity)authState.User.Identity;
+            List<Claim> claims = identity.Claims.ToList();
+            string discordCode = claims[2].Value.ToString();
+
+            id = userId;
+
+            User loggedUser = _context.Users.Where(w => w.UserKey == id).FirstOrDefault();
+            if (loggedUser == null)
+            {
+                User newUser = new User
+                {
+                    Admin = false,
+                    Name = userName,
+                    UserKey = id,
+                    DiscordCode = discordCode
+                };
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+            }
+
+        }
+
+    }
+}

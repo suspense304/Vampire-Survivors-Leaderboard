@@ -1,0 +1,167 @@
+﻿@page "/"
+
+@using Models
+@using Microsoft.EntityFrameworkCore;
+@using System.Security.Claims
+
+@inject vswebsiteContext _context
+
+<div style="width: 100%; text-align: center;"><h2>Newest Submissions</h2></div>
+<div class="dashboardGrid">
+    <div class="dashboardItem">
+        <div style="width: 100%; text-align: center; background-color: #424242ff; color: white;"><h4>Mad Forest</h4></div>
+        <MudTable Items="@madForestNewest" Dense="true" Hover="true" FixedHeader="true">
+            <HeaderContent>
+                <MudTh></MudTh>
+                <MudTh>User</MudTh>
+                <MudTh>Character</MudTh>
+                <MudTh>Stage</MudTh>
+                <MudTh>Run Type</MudTh>
+                <MudTh>Kills</MudTh>
+                <MudTh>Level</MudTh>
+                <MudTh>Gold</MudTh>
+                <MudTh>Survived Time</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@(madForestNewest.IndexOf(@context) + 1)</MudTd>
+                <MudTd DataLabel="User">@context.User.Name</MudTd>
+                <MudTd DataLabel="Character">@context.Character.Name</MudTd>
+                <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
+                <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+                <MudTd DataLabel="Kills">@context.Kills</MudTd>
+                <MudTd DataLabel="Level">@context.Level</MudTd>
+                <MudTd DataLabel="Gold">@context.Gold</MudTd>
+                <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
+                <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+    <div class="dashboardItem">
+        <div style="width: 100%; text-align: center; background-color: #424242ff; color: white;"><h4>Inlaid Library</h4></div>
+        <MudTable Items="@inLaidNewest" Dense="true" Hover="true" FixedHeader="true">
+            <HeaderContent>
+                <MudTh></MudTh>
+                <MudTh>User</MudTh>
+                <MudTh>Character</MudTh>
+                <MudTh>Stage</MudTh>
+                <MudTh>Run Type</MudTh>
+                <MudTh>Kills</MudTh>
+                <MudTh>Level</MudTh>
+                <MudTh>Gold</MudTh>
+                <MudTh>Survived Time</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@(inLaidNewest.IndexOf(@context) + 1)</MudTd>
+                <MudTd DataLabel="User">@context.User.Name</MudTd>
+                <MudTd DataLabel="Character">@context.Character.Name</MudTd>
+                <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
+                <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+                <MudTd DataLabel="Kills">@context.Kills</MudTd>
+                <MudTd DataLabel="Level">@context.Level</MudTd>
+                <MudTd DataLabel="Gold">@context.Gold</MudTd>
+                <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
+                <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+    <div class="dashboardItem">
+        <div style="width: 100%; text-align: center; background-color: #424242ff; color: white;"><h4>Green Acres</h4></div>
+        <MudTable Items="@greenAcresNewest" Dense="true" Hover="true" FixedHeader="true">
+            <HeaderContent>
+                <MudTh></MudTh>
+                <MudTh>User</MudTh>
+                <MudTh>Character</MudTh>
+                <MudTh>Stage</MudTh>
+                <MudTh>Run Type</MudTh>
+                <MudTh>Kills</MudTh>
+                <MudTh>Level</MudTh>
+                <MudTh>Gold</MudTh>
+                <MudTh>Survived Time</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@(greenAcresNewest.IndexOf(@context) + 1)</MudTd>
+                <MudTd DataLabel="User">@context.User.Name</MudTd>
+                <MudTd DataLabel="Character">@context.Character.Name</MudTd>
+                <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
+                <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+                <MudTd DataLabel="Kills">@context.Kills</MudTd>
+                <MudTd DataLabel="Level">@context.Level</MudTd>
+                <MudTd DataLabel="Gold">@context.Gold</MudTd>
+                <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
+                <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+</div>
+
+
+
+@code {
+    private List<Entry> madForestNewest = new List<Entry>();
+    private List<Entry> inLaidNewest = new List<Entry>();
+    private List<Entry> greenAcresNewest = new List<Entry>();
+    bool isAdmin;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private List<Entry> SortList(List<Entry> lst, int runTypeId)
+    {
+        switch (runTypeId)
+        {
+            case 1:
+                return lst.OrderByDescending(o => o.Level).ToList();
+            case 2:
+                return lst.OrderByDescending(o => o.Kills).ToList();
+            case 3:
+                return lst.OrderByDescending(o => o.SurvivedTime).ToList();
+            case 4:
+                return lst.OrderByDescending(o => o.Gold).ToList();
+            case 0:
+                return lst.OrderByDescending(o => o.Level).ToList();
+        }
+        return lst;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
+        if (chkUser != null) isAdmin = chkUser.Admin;
+
+        madForestNewest = await _context.Entries
+        .Include(i => i.User)
+        .Include(i => i.Stage)
+        .Include(i => i.Character)
+        .Include(i => i.RunType)
+        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 1).Take(5).ToListAsync();
+
+        madForestNewest = SortList(madForestNewest, 2);
+
+        inLaidNewest = await _context.Entries
+        .Include(i => i.User)
+        .Include(i => i.Stage)
+        .Include(i => i.Character)
+        .Include(i => i.RunType)
+        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 2).Take(5).ToListAsync();
+
+        inLaidNewest = SortList(inLaidNewest, 1);
+
+        greenAcresNewest = await _context.Entries
+        .Include(i => i.User)
+        .Include(i => i.Stage)
+        .Include(i => i.Character)
+        .Include(i => i.RunType)
+        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 3).Take(5).ToListAsync();
+
+        greenAcresNewest = SortList(greenAcresNewest, 3);
+    }
+}
+
+

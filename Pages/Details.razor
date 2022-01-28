@@ -1,0 +1,171 @@
+﻿@page "/Entry"
+
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.AspNetCore.WebUtilities;
+@using Models
+@using System.Security.Claims
+
+@inject vswebsiteContext _context
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+
+@if (entry != null)
+{
+    @if (!entry.Approved && !isAdmin && !submittedUser)
+    {
+        <h3>This run has not been approved.</h3>
+    }
+    else if (entry.Deleted && !isAdmin && !submittedUser)
+    {
+        <h3>This run has been removed.</h3>
+    }
+    else
+    {
+        <h2>@entry.Stage.Name @entry.RunType.Name Category</h2>
+        <br />
+        <hr />
+        <br />
+
+        <div class="detailRow">
+            <div class="detailCol">
+                <span>@entry.Character.Name: #@characterRank / @characterMaxRank</span>
+            </div>
+            <div class="detailCol">
+                <span style="display: block; width: 100%; text-align: right;">Stage: #@rank / @maxRank</span>
+            </div>
+        </div>
+        <div class="detailFrame">
+            <div class="video-container">
+                <iframe width="560" height="315" src="@videoUrl" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="detailRow">
+                <div class="detailCol">
+                    <span>Submitted by: @entry.User.Name</span>
+                </div>
+                <div class="detailCol">
+                    <span style="display: block; width: 100%; text-align: center;">Submitted on: @entry.DateSubmitted</span>
+                </div>
+                <div class="detailCol">
+                    <span style="display: block; width: 100%; text-align: right;">L (@entry.Level) | K (@entry.Kills) | G (@entry.Gold) | T (@entry.SurvivedTime)</span>
+                </div>
+            </div>
+        </div>
+        <br />
+        <MudGrid>
+            @if (isAdmin)
+            {
+
+                <MudItem><MudButton Variant="Variant.Filled" Color="Color.Primary" type="button" @onclick="() => ApproveEntry()"> Approve </MudButton></MudItem>
+                <MudItem><MudButton Variant="Variant.Filled" Color="Color.Error" type="button" @onclick="() => RejectEntry()"> Reject </MudButton></MudItem>
+                @if (entry.Deleted && isAdmin)
+                {
+                    <MudItem><MudButton Variant="Variant.Filled" Color="Color.Info" type="button" @onclick="() => RestoreEntry()"> Restore </MudButton></MudItem>
+                }
+
+            }
+            @if (!entry.Deleted && (isAdmin || submittedUser))
+            {
+                <MudItem><MudButton Variant="Variant.Filled" Color="Color.Warning" type="button" @onclick="() => DeleteEntry()"> Delete </MudButton></MudItem>
+            }
+        </MudGrid>
+    }
+
+}
+
+@code {
+    bool isAdmin;
+    bool submittedUser;
+
+    List<Entry> entries = new List<Entry>();
+    Entry entry;
+
+    string videoUrl;
+
+    int characterRank;
+    int characterMaxRank;
+    int rank;
+    int maxRank;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
+        if (chkUser != null) isAdmin = chkUser.Admin;
+
+        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("id", out var _id))
+        {
+            entry = await _context.Entries
+                .Include(i => i.Character)
+                .Include(i => i.User)
+                .Include(i => i.RunType)
+                .Include(i => i.Stage)
+                .Where(w => w.Id == Convert.ToInt32(_id)).FirstOrDefaultAsync();
+            videoUrl = "https://www.youtube.com/embed/" + entry.Video;
+
+            switch (entry.RunTypeId)
+            {
+                case 1:
+                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Level).ToListAsync();
+                    break;
+                case 2:
+                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Kills).ToListAsync();
+                    break;
+                case 3:
+                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.SurvivedTime).ToListAsync();
+                    break;
+                case 4:
+                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Gold).ToListAsync();
+                    break;
+            }
+
+            if (chkUser != null)
+            {
+                submittedUser = (entry.UserId == chkUser.Id) ? true : false;
+            }
+
+            rank = entries.IndexOf(entry) + 1;
+            maxRank = entries.Count;
+
+            entries = entries.Where(w => w.CharacterId == entry.CharacterId).ToList();
+
+            characterRank = entries.IndexOf(entry) + 1;
+            characterMaxRank = entries.Count;
+        }
+    }
+
+    private async Task ApproveEntry()
+    {
+        entry.Approved = true;
+        await _context.SaveChangesAsync();
+        Snackbar.Add("Entry has been approved.", Severity.Success);
+    }
+
+    private async Task RejectEntry()
+    {
+        entry.Deleted = true;
+        await _context.SaveChangesAsync();
+        Snackbar.Add("Entry has been rejected.", Severity.Warning);
+    }
+
+    private async Task RestoreEntry()
+    {
+        entry.Deleted = false;
+        await _context.SaveChangesAsync();
+        Snackbar.Add("Entry has been restored.", Severity.Success);
+    }
+
+    private async Task DeleteEntry()
+    {
+        entry.Deleted = true;
+        await _context.SaveChangesAsync();
+        Snackbar.Add("Entry has been deleted.", Severity.Warning);
+    }
+}
+

@@ -1,0 +1,61 @@
+﻿@page "/Approve"
+
+@using Models
+@using Microsoft.EntityFrameworkCore;
+@using System.Security.Claims
+
+@inject vswebsiteContext _context
+
+@if (isAdmin)
+{
+    <h3>Approve</h3>
+
+    <MudTable Items="@entries" Hover="true" FixedHeader="true" Height="600px">
+        <HeaderContent>
+            <MudTh></MudTh>
+            <MudTh>User</MudTh>
+            <MudTh>Character</MudTh>
+            <MudTh>Stage</MudTh>
+            <MudTh>Run Type</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Id">@(entries.IndexOf(@context) + 1)</MudTd>
+            <MudTd DataLabel="User">@context.User.Name</MudTd>
+            <MudTd DataLabel="Character">@context.Character.Name</MudTd>
+            <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
+            <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+            <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+else
+{
+    <h2>Access Denied</h2>
+}
+
+
+@code {
+    private List<Entry> entries = new List<Entry>();
+    bool isAdmin;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
+        if (chkUser != null) isAdmin = chkUser.Admin;
+
+        entries = await _context.Entries
+        .Include(i => i.User)
+        .Include(i => i.Stage)
+        .Include(i => i.Character)
+        .Include(i => i.RunType)
+        .Where(w => w.Approved == false && w.Deleted == false).ToListAsync();
+    }
+}
