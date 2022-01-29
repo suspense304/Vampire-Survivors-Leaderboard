@@ -1,27 +1,48 @@
 ﻿@using Microsoft.EntityFrameworkCore;
 @using Models
-@using System.Security.Claims
-@using Microsoft.Extensions.Configuration
-@using System.IO
+@using Microsoft.Extensions.Configuration 
+@using System.IO 
 
 @inject vswebsiteContext _context
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
+@inject IConfiguration Configuration
 
-@page "/Submit"
+@page "/Admin"
 
 
 @if (loggedIn)
 {
     <h3>Submit Run</h3>
     <br />
+    <hr />
     <br />
-
     <EditForm Model="@entry" OnValidSubmit="@SubmitEntry">
         <DataAnnotationsValidator />
         <ValidationSummary />
-        <h3>Run Info</h3>
+        <h3>Info</h3>
+        <br />
+        <hr />
+        <br />
         <MudGrid Style="width: 600px;">
+            <MudItem xs="12" sm="12" md="12">
+                <MudItem xs="12">
+                    <MudSelect @bind-Value="entry.UserId" Label="User" FullWidth="false" Class="fixedWidth">
+                        @if (entry.User != null)
+                            {
+                            <MudSelectItem Value="@entry.UserId">@entry.User.Name</MudSelectItem>
+                            }
+                            else
+                            {
+                            <MudSelectItem Value="0">None</MudSelectItem>
+                            }
+                        @foreach (var user in users)
+                            {
+                            <MudSelectItem Value="@user.Id">@user.Name</MudSelectItem>
+                            }
+                    </MudSelect>
+                </MudItem>
+            </MudItem>
             <MudItem xs="12" sm="4" md="4">
                 <MudItem xs="12">
                     <MudSelect @bind-Value="entry.StageId" Label="Stage" FullWidth="false" Style="width: 100px;">
@@ -78,6 +99,8 @@
             </MudItem>*@
         </MudGrid>
         <br />
+        <hr />
+        <br />
         <h3>Stats</h3>
         <br />
         <hr />
@@ -95,17 +118,18 @@
             <MudItem xs="12" sm="6" md="3">
                 <MudTextField T="Decimal" Label="Survived" Variant="Variant.Outlined" @bind-Value="@entry.SurvivedTime" />
             </MudItem>
-
-            <MudItem Style="margin: auto;">
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SubmitEntry">Submit</MudButton>
-            </MudItem>
         </MudGrid>
+        <br />
+        <hr />
         <br />
         <h3>Proof</h3>
         <br />
         <hr />
         <br />
         <MudGrid Style="width: 800px;">
+            <MudItem xs="12" sm="12" md="12">
+                <MudDatePicker Label="Date Submitted" @bind-Date="@submitDate" Class="fixedWidth" />
+            </MudItem>
             <MudItem xs="12" sm="12" md="12">
                 <MudTextField T="String" Label="Video" Variant="Variant.Outlined" @bind-Value="@entry.Video" Style="width: 500px;" />
             </MudItem>
@@ -131,6 +155,12 @@
                 </div>
             }
         </MudGrid>
+        <br />
+        <hr />
+        <br />
+        <MudItem Style="margin: auto;">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SubmitEntry">Submit</MudButton>
+        </MudItem>
     </EditForm>
 }
 else
@@ -145,14 +175,18 @@ else
 
     string dropClass = string.Empty;
 
-    string ImageFileName = "";
-    string ImageUrl = "";
+    DateTime? submitDate;
 
     public List<Character> characters = new List<Character>();
     public List<Stage> stages = new List<Stage>();
-    public List<RunType> runTypes = new List<RunType>();
+    //public List<RunType> runTypes = new List<RunType>();
+    public List<User> users = new List<User>();
 
     public Entry entry = new Entry();
+
+    string ContainerName = "vsimages";
+    string ImageFileName = "";
+    string ImageUrl = "";
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
@@ -167,7 +201,8 @@ else
 
         characters = await _context.Characters.OrderBy(o => o.Name).ToListAsync();
         stages = await _context.Stages.ToListAsync();
-        runTypes = await _context.RunTypes.ToListAsync();
+        //runTypes = await _context.RunTypes.ToListAsync();
+        users = await _context.Users.OrderBy(o => o.Name).ToListAsync();
     }
 
     private async Task SubmitEntry()
@@ -180,27 +215,24 @@ else
         {
             Snackbar.Add("Character must be selected.", Severity.Error);
         }
-        //else if (entry.RunTypeId == 0)
-        //{
-        //    Snackbar.Add("Run Type must be selected.", Severity.Error);
-        //}
+        else if (entry.UserId == 0)
+        {
+            Snackbar.Add("User must be selected.", Severity.Error);
+        }
+        else if (submitDate == null)
+        {
+            Snackbar.Add("Date must be selected.", Severity.Error);
+        }
         else
         {
-            var authState = await authenticationStateTask;
-            var user = authState.User;
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
-
-            entry.DateSubmitted = DateTime.Now;
-            entry.Approved = false;
-            entry.UserId = chkUser.Id;
+            entry.DateSubmitted = Convert.ToDateTime(submitDate);
             entry.Image = ImageFileName;
+            entry.Approved = true;
             _context.Entries.Add(entry);
             await _context.SaveChangesAsync();
             Snackbar.Add("Entry has been submitted.", Severity.Success);
             entry = new Entry();
         }
-
     }
 
     void HandleDragEnter()
@@ -249,5 +281,4 @@ else
             throw;
         }
     }
-
 }

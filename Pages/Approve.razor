@@ -16,7 +16,7 @@
             <MudTh>User</MudTh>
             <MudTh>Character</MudTh>
             <MudTh>Stage</MudTh>
-            <MudTh>Run Type</MudTh>
+            @*<MudTh>Run Type</MudTh>*@
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -24,7 +24,7 @@
             <MudTd DataLabel="User">@context.User.Name</MudTd>
             <MudTd DataLabel="Character">@context.Character.Name</MudTd>
             <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-            <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+            @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
             <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
         </RowTemplate>
     </MudTable>
@@ -55,7 +55,7 @@ else
         .Include(i => i.User)
         .Include(i => i.Stage)
         .Include(i => i.Character)
-        .Include(i => i.RunType)
+        //.Include(i => i.RunType)
         .Where(w => w.Approved == false && w.Deleted == false).ToListAsync();
     }
 }

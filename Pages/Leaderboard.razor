@@ -79,11 +79,11 @@ else
             <MudTh>User</MudTh>
             <MudTh>Character</MudTh>
             <MudTh>Stage</MudTh>
-            <MudTh>Run Type</MudTh>
-            <MudTh>Kills</MudTh>
-            <MudTh>Level</MudTh>
-            <MudTh>Gold</MudTh>
-            <MudTh>Survived Time</MudTh>
+            @*<MudTh>Run Type</MudTh>*@
+            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Level)">Level</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Gold)">Gold</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.SurvivedTime)">Survived Time</MudTableSortLabel></MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -91,7 +91,7 @@ else
             <MudTd DataLabel="User">@context.User.Name</MudTd>
             <MudTd DataLabel="Character">@context.Character.Name</MudTd>
             <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-            <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+            @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
             <MudTd DataLabel="Kills">@context.Kills</MudTd>
             <MudTd DataLabel="Level">@context.Level</MudTd>
             <MudTd DataLabel="Gold">@context.Gold</MudTd>
@@ -145,10 +145,10 @@ else
         entries = await _context.Entries
             .Include(i => i.Stage)
             .Include(i => i.Character)
-            .Include(i => i.RunType)
+            //.Include(i => i.RunType)
             .Where(w => (characterId == 0 || w.CharacterId == characterId)
             && (stageId == 0 || w.StageId == stageId)
-            && (runTypeId == 0 || w.RunTypeId == runTypeId)
+            //&& (runTypeId == 0 || w.RunTypeId == runTypeId)
             && w.Approved == true
             && w.Deleted == false).ToListAsync();
         SortList();
@@ -166,8 +166,8 @@ else
         if (entry.Stage.Name.ToString().StartsWith(Filter, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (entry.RunType.Name.ToString().StartsWith(Filter, StringComparison.OrdinalIgnoreCase))
-            return true;
+        //if (entry.RunType.Name.ToString().StartsWith(Filter, StringComparison.OrdinalIgnoreCase))
+        //    return true;
 
         return false;
     }
@@ -186,10 +186,10 @@ else
             .Include(i => i.User)
             .Include(i => i.Stage)
             .Include(i => i.Character)
-            .Include(i => i.RunType)
+            //.Include(i => i.RunType)
             .Where(w => (characterId == 0 || w.CharacterId == characterId)
             && (stageId == 0 || w.StageId == stageId)
-            && (runTypeId == 0 || w.RunTypeId == runTypeId)
+            //&& (runTypeId == 0 || w.RunTypeId == runTypeId)
             && w.Approved == true
             && w.Deleted == false).ToListAsync();
         SortList();

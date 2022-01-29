@@ -16,7 +16,7 @@
                 <MudTh>User</MudTh>
                 <MudTh>Character</MudTh>
                 <MudTh>Stage</MudTh>
-                <MudTh>Run Type</MudTh>
+                @*<MudTh>Run Type</MudTh>*@
                 <MudTh>Kills</MudTh>
                 <MudTh>Level</MudTh>
                 <MudTh>Gold</MudTh>
@@ -28,7 +28,7 @@
                 <MudTd DataLabel="User">@context.User.Name</MudTd>
                 <MudTd DataLabel="Character">@context.Character.Name</MudTd>
                 <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-                <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+                @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
                 <MudTd DataLabel="Kills">@context.Kills</MudTd>
                 <MudTd DataLabel="Level">@context.Level</MudTd>
                 <MudTd DataLabel="Gold">@context.Gold</MudTd>
@@ -45,7 +45,7 @@
                 <MudTh>User</MudTh>
                 <MudTh>Character</MudTh>
                 <MudTh>Stage</MudTh>
-                <MudTh>Run Type</MudTh>
+                @*<MudTh>Run Type</MudTh>*@
                 <MudTh>Kills</MudTh>
                 <MudTh>Level</MudTh>
                 <MudTh>Gold</MudTh>
@@ -57,7 +57,7 @@
                 <MudTd DataLabel="User">@context.User.Name</MudTd>
                 <MudTd DataLabel="Character">@context.Character.Name</MudTd>
                 <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-                <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+                @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
                 <MudTd DataLabel="Kills">@context.Kills</MudTd>
                 <MudTd DataLabel="Level">@context.Level</MudTd>
                 <MudTd DataLabel="Gold">@context.Gold</MudTd>
@@ -74,7 +74,7 @@
                 <MudTh>User</MudTh>
                 <MudTh>Character</MudTh>
                 <MudTh>Stage</MudTh>
-                <MudTh>Run Type</MudTh>
+                @*<MudTh>Run Type</MudTh>*@
                 <MudTh>Kills</MudTh>
                 <MudTh>Level</MudTh>
                 <MudTh>Gold</MudTh>
@@ -86,7 +86,7 @@
                 <MudTd DataLabel="User">@context.User.Name</MudTd>
                 <MudTd DataLabel="Character">@context.Character.Name</MudTd>
                 <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-                <MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>
+                @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
                 <MudTd DataLabel="Kills">@context.Kills</MudTd>
                 <MudTd DataLabel="Level">@context.Level</MudTd>
                 <MudTd DataLabel="Gold">@context.Gold</MudTd>
@@ -108,24 +108,6 @@
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
 
-    private List<Entry> SortList(List<Entry> lst, int runTypeId)
-    {
-        switch (runTypeId)
-        {
-            case 1:
-                return lst.OrderByDescending(o => o.Level).ToList();
-            case 2:
-                return lst.OrderByDescending(o => o.Kills).ToList();
-            case 3:
-                return lst.OrderByDescending(o => o.SurvivedTime).ToList();
-            case 4:
-                return lst.OrderByDescending(o => o.Gold).ToList();
-            case 0:
-                return lst.OrderByDescending(o => o.Level).ToList();
-        }
-        return lst;
-    }
-
     protected override async Task OnInitializedAsync()
     {
 
@@ -139,28 +121,28 @@
         .Include(i => i.User)
         .Include(i => i.Stage)
         .Include(i => i.Character)
-        .Include(i => i.RunType)
-        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 1).Take(5).ToListAsync();
-
-        madForestNewest = SortList(madForestNewest, 2);
+        //.Include(i => i.RunType)
+        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 1)
+        .OrderByDescending(o => o.DateSubmitted)
+        .Take(5).ToListAsync();
 
         inLaidNewest = await _context.Entries
         .Include(i => i.User)
         .Include(i => i.Stage)
         .Include(i => i.Character)
-        .Include(i => i.RunType)
-        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 2).Take(5).ToListAsync();
-
-        inLaidNewest = SortList(inLaidNewest, 1);
+        //.Include(i => i.RunType)
+        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 2)
+        .OrderByDescending(o => o.DateSubmitted)
+        .Take(5).ToListAsync();
 
         greenAcresNewest = await _context.Entries
         .Include(i => i.User)
         .Include(i => i.Stage)
         .Include(i => i.Character)
-        .Include(i => i.RunType)
-        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 3).Take(5).ToListAsync();
-
-        greenAcresNewest = SortList(greenAcresNewest, 3);
+        //.Include(i => i.RunType)
+        .Where(w => w.Approved == true && w.Deleted == false && w.StageId == 3)
+        .OrderByDescending(o => o.DateSubmitted)
+        .Take(5).ToListAsync();
     }
 }
 

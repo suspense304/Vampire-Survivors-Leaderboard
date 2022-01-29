@@ -11,7 +11,6 @@ namespace Vampire_Survivors_Leaderboard.Models
         public int UserId { get; set; }
         public int CharacterId { get; set; }
         public int StageId { get; set; }
-        public int RunTypeId { get; set; }
         public DateTime DateSubmitted { get; set; }
         public int Level { get; set; }
         public int Kills { get; set; }
@@ -23,7 +22,6 @@ namespace Vampire_Survivors_Leaderboard.Models
         public bool Deleted { get; set; }
 
         public virtual Character Character { get; set; }
-        public virtual RunType RunType { get; set; }
         public virtual Stage Stage { get; set; }
         public virtual User User { get; set; }
     }

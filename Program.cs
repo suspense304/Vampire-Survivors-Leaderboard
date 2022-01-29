@@ -21,6 +21,7 @@ namespace Vampire_Survivors_Leaderboard
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
+                    webBuilder.UseContentRoot(AppContext.BaseDirectory);
                 });
     }
 }

@@ -7,10 +7,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
+using System.IO;
 using Vampire_Survivors_Leaderboard.Areas.Identity;
-using Vampire_Survivors_Leaderboard.Data;
 using Vampire_Survivors_Leaderboard.Models;
 
 namespace Vampire_Survivors_Leaderboard
@@ -54,7 +55,9 @@ namespace Vampire_Survivors_Leaderboard
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddMudServices();
+            //services.AddScoped<AzureStorageHelper>();
         }
+
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -73,6 +76,11 @@ namespace Vampire_Survivors_Leaderboard
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Files")),
+                RequestPath = "/Files"
+            });
 
             app.UseRouting();
 

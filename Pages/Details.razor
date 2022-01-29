@@ -21,12 +21,12 @@
     }
     else
     {
-        <h2>@entry.Stage.Name @entry.RunType.Name Category</h2>
+        <h2>@entry.Stage.Name</h2>
         <br />
         <hr />
         <br />
 
-        <div class="detailRow">
+        <div class="detailRow" style="width: 900px;">
             <div class="detailCol">
                 <span>@entry.Character.Name: #@characterRank / @characterMaxRank</span>
             </div>
@@ -34,13 +34,35 @@
                 <span style="display: block; width: 100%; text-align: right;">Stage: #@rank / @maxRank</span>
             </div>
         </div>
-        <div class="detailFrame">
-            <div class="video-container">
-                <iframe width="560" height="315" src="@videoUrl" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <div class="detailFrame" style="width: 900px;">
+            <div class="row">
+                <div class="col-6">
+                    @if (@entry.Video != null)
+                    {
+                        <div class="video-container">
+                            <iframe style="height: 325px;" width="560" src="@videoUrl" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    }
+                    else
+                    {
+                        <img src="files\novideo.png" style="height: 325px;" width="560" />
+                    }
+
+                </div>
+                <div class="col-6" style=" margin: auto;">
+                    @if (@entry.Image != null)
+                    {
+                    <img src="\files\@entry.Image" style="display: block; height: 100%; max-width: 100%; margin: auto;"/>
+                    }
+                    else
+                    {
+                        <img src="files\noimage.jpg" style="display: block; height: 100%; max-width: 100%; margin: auto;"/>
+                    }
+                </div>
             </div>
-            <div class="detailRow">
+            <div class="detailRow" style="width: 900px;">
                 <div class="detailCol">
-                    <span>Submitted by: @entry.User.Name</span>
+                    <span style="display: block; width: 100%;">Submitted by: @entry.User.Name</span>
                 </div>
                 <div class="detailCol">
                     <span style="display: block; width: 100%; text-align: center;">Submitted on: @entry.DateSubmitted</span>
@@ -104,26 +126,26 @@
             entry = await _context.Entries
                 .Include(i => i.Character)
                 .Include(i => i.User)
-                .Include(i => i.RunType)
+                //.Include(i => i.RunType)
                 .Include(i => i.Stage)
                 .Where(w => w.Id == Convert.ToInt32(_id)).FirstOrDefaultAsync();
             videoUrl = "https://www.youtube.com/embed/" + entry.Video;
 
-            switch (entry.RunTypeId)
-            {
-                case 1:
-                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Level).ToListAsync();
-                    break;
-                case 2:
-                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Kills).ToListAsync();
-                    break;
-                case 3:
-                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.SurvivedTime).ToListAsync();
-                    break;
-                case 4:
-                    entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Gold).ToListAsync();
-                    break;
-            }
+            //switch (entry.RunTypeId)
+            //{
+            //    case 1:
+            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Level).ToListAsync();
+            //        break;
+            //    case 2:
+            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Kills).ToListAsync();
+            //        break;
+            //    case 3:
+            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.SurvivedTime).ToListAsync();
+            //        break;
+            //    case 4:
+            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Gold).ToListAsync();
+            //        break;
+            //}
 
             if (chkUser != null)
             {

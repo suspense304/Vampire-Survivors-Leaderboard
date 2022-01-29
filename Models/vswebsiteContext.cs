@@ -53,12 +53,6 @@ namespace Vampire_Survivors_Leaderboard.Models
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Entries_Characters");
 
-                entity.HasOne(d => d.RunType)
-                    .WithMany(p => p.Entries)
-                    .HasForeignKey(d => d.RunTypeId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Entries_RunType");
-
                 entity.HasOne(d => d.Stage)
                     .WithMany(p => p.Entries)
                     .HasForeignKey(d => d.StageId)

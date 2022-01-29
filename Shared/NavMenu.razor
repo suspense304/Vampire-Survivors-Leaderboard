@@ -4,18 +4,22 @@
 @inject vswebsiteContext _context
 
 <MudDrawer @bind-Open="SideBarOpen" Elevation="1">
-    <MudDrawerHeader>
-        <img src="/images/logo.png" style="border: none; width: 100%;" />
-    </MudDrawerHeader>
+    <img src="/images/logo.png" style="border: none; width: 100%;" />
+    <hr />
     <MudNavMenu>
         <MudNavLink Href="/" Icon="@Icons.Filled.Home">Dashboard</MudNavLink>
         <MudNavLink Href="/Leaderboard" Icon="@Icons.Filled.Leaderboard">Leaderboard</MudNavLink>
-        <hr />
-        <MudNavLink Href="/Submit" Icon="@Icons.Filled.AddTask">Submit</MudNavLink>
-        <hr />
+        @if (loggedIn)
+        {
+            <hr />
+            <MudNavLink Href="/Submit" Icon="@Icons.Filled.AddTask">Submit</MudNavLink>
+        }
         @if (isAdmin)
         {
+            <hr />
+            <MudNavLink Href="/Admin" Icon="@Icons.Filled.AdminPanelSettings">Manual Entry</MudNavLink>
             <MudNavLink Href="/Approve" Icon="@Icons.Filled.Approval">Approve</MudNavLink>
+
         }
     </MudNavMenu>
 </MudDrawer>
