@@ -58,24 +58,6 @@
                     </MudSelect>
                 </MudItem>
             </MudItem>
-            @*<MudItem xs="12" sm="4" md="4">
-                <MudItem xs="12">
-                    <MudSelect @bind-Value="entry.RunTypeId" Label="Run Type" FullWidth="false">
-                        @if (entry.RunType != null)
-                            {
-                            <MudSelectItem Value="@entry.RunTypeId">@entry.RunType.Name</MudSelectItem>
-                            }
-                            else
-                            {
-                            <MudSelectItem Value="0">None</MudSelectItem>
-                            }
-                        @foreach (var runType in runTypes)
-                            {
-                            <MudSelectItem Value="@runType.Id">@runType.Name</MudSelectItem>
-                            }
-                    </MudSelect>
-                </MudItem>
-            </MudItem>*@
         </MudGrid>
         <br />
         <h3>Stats</h3>
@@ -94,10 +76,6 @@
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
                 <MudTextField T="Decimal" Label="Survived" Variant="Variant.Outlined" @bind-Value="@entry.SurvivedTime" />
-            </MudItem>
-
-            <MudItem Style="margin: auto;">
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SubmitEntry">Submit</MudButton>
             </MudItem>
         </MudGrid>
         <br />
@@ -130,6 +108,9 @@
                                @ondragleave="HandleDragLeave" />
                 </div>
             }
+            <MudItem Style="margin: auto;">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SubmitEntry">Submit</MudButton>
+            </MudItem>
         </MudGrid>
     </EditForm>
 }
@@ -223,7 +204,7 @@ else
             await InvokeAsync(StateHasChanged);
 
             var format = "image/png";
-            var resizedImageFile = await args.File.RequestImageFileAsync(format, 400, 400);
+            var resizedImageFile = await args.File.RequestImageFileAsync(format, 1280, 720);
 
             var buffer = new byte[resizedImageFile.Size];
             await resizedImageFile.OpenReadStream().ReadAsync(buffer);

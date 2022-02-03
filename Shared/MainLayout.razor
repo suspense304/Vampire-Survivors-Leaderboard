@@ -10,11 +10,12 @@
     <AppBar OnSidebarToggled="ToggleSidebar" OnThemeToggled="ToggleTheme" />
     <NavMenu SideBarOpen="_sidebarOpen" />
     <MudMainContent Class="pt-16 px-16">
-        <MudContainer Class="mt-6">
+        <MudContainer Class="mt-6" Style="padding-bottom: 75px;">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+<Ticker></Ticker>
 <MudThemeProvider Theme="_currentTheme" />
 
 @code {

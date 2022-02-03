@@ -3,11 +3,12 @@
 @using System.Net.Http.Json
 @using Models
 @using Microsoft.EntityFrameworkCore;
+@using System.Diagnostics;
 
 @inject vswebsiteContext _context
 
 <h3>Leaderboard</h3>
-@if (entries == null)
+@if (entries == null || Loading)
 {
     <p><em>Loading...</em></p>
 }
@@ -20,7 +21,7 @@ else
                 <label class="formLabel" for="location" style="width: 100px; padding: 5px; margin-right: 10px;">Stage: </label>
                 <span class="InputContainer">
                     <select class="DropDown" @onchange="StageChanged" style="width: 250px; padding: 10px;">
-                        <option value="0">ALL</option>
+                        @*<option value="0">ALL</option>*@
                         @foreach (var stage in stages)
                         {
                             <option value="@stage.Id">@stage.Name</option>
@@ -48,7 +49,7 @@ else
                 <label class="formLabel" for="location" style="width: 100px; padding: 5px; margin-right: 10px;">Run Type: </label>
                 <span class="InputContainer">
                     <select class="DropDown" @onchange="RunTypeChanged" style="width: 250px; padding: 10px;">
-                        <option value="0">ALL</option>
+                        @*<option value="0">ALL</option>*@
                         @foreach (var runType in runTypes)
                         {
                             <option value="@runType.Id">@runType.Name</option>
@@ -60,35 +61,35 @@ else
     </MudGrid>
     <br />
     @*<div class="d-flex flex-row">
-        <div class="p3">
-            <input class="form-control" type="text" placeholder="Filter..." @bind="Filter" @bind:event="oninput">
-        </div>
-    </div>*@
+            <div class="p3">
+                <input class="form-control" type="text" placeholder="Filter..." @bind="Filter" @bind:event="oninput">
+            </div>
+        </div>*@
     <br />
     <MudTable Items="@entries.Where(w => IsVisible(w))" Hover="true" SortLabel="Sort By" FixedHeader="true" Height="600px">
         <HeaderContent>
             @*<MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Character.Name)">Character</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Stage.Name)">Stage</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.RunType.Name)">Run Type</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Level)">Level</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Gold)">Gold</MudTableSortLabel></MudTh>
-        <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.SurvivedTime)">Survived Time</MudTableSortLabel></MudTh>*@
+                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Character.Name)">Character</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Stage.Name)">Stage</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.RunType.Name)">Run Type</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Level)">Level</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Gold)">Gold</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.SurvivedTime)">Survived Time</MudTableSortLabel></MudTh>*@
             <MudTh>Id</MudTh>
             <MudTh>User</MudTh>
             <MudTh>Character</MudTh>
             <MudTh>Stage</MudTh>
             @*<MudTh>Run Type</MudTh>*@
-            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Level)">Level</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Gold)">Gold</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.SurvivedTime)">Survived Time</MudTableSortLabel></MudTh>
+            <MudTh>Kills</MudTh>
+            <MudTh>Level</MudTh>
+            <MudTh>Gold</MudTh>
+            <MudTh>Survived Time</MudTh>
             <MudTh></MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Id"><a href=@("/Entry?id=" + @context.Id)>@(entries.IndexOf(@context) + 1)</a></MudTd>
-            <MudTd DataLabel="User">@context.User.Name</MudTd>
+            <MudTd DataLabel="User">@context.User.DisplayName</MudTd>
             <MudTd DataLabel="Character">@context.Character.Name</MudTd>
             <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
             @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
@@ -108,6 +109,7 @@ else
 
     bool adminUser;
     bool ActiveOnly { get; set; } = false;
+    bool Loading = true;
 
     public string Filter { get; set; }
 
@@ -115,9 +117,9 @@ else
     public List<Stage> stages = new List<Stage>();
     public List<RunType> runTypes = new List<RunType>();
 
-    int stageId;
+    int stageId = 1;
     int characterId;
-    int runTypeId;
+    int runTypeId = 1;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
@@ -143,6 +145,7 @@ else
     private async void RefreshList()
     {
         entries = await _context.Entries
+            .Include(i => i.User)
             .Include(i => i.Stage)
             .Include(i => i.Character)
             //.Include(i => i.RunType)
@@ -151,7 +154,7 @@ else
             //&& (runTypeId == 0 || w.RunTypeId == runTypeId)
             && w.Approved == true
             && w.Deleted == false).ToListAsync();
-        SortList();
+        await SortList();
         StateHasChanged();
     }
 
@@ -192,29 +195,57 @@ else
             //&& (runTypeId == 0 || w.RunTypeId == runTypeId)
             && w.Approved == true
             && w.Deleted == false).ToListAsync();
-        SortList();
+        await SortList();
 
     }
 
-    private void SortList()
+    private async Task SortList()
     {
+        Loading = true;
         switch (runTypeId)
         {
             case 1:
-                entries = entries.OrderByDescending(o => o.Level).ToList();
+                entries = entries
+                    .OrderByDescending(o => o.Level).ToList();
+                await RemoveDupes(entries);
                 break;
             case 2:
                 entries = entries.OrderByDescending(o => o.Kills).ToList();
+                await RemoveDupes(entries);
                 break;
             case 3:
                 entries = entries.OrderByDescending(o => o.SurvivedTime).ToList();
+                await RemoveDupes(entries);
                 break;
             case 4:
                 entries = entries.OrderByDescending(o => o.Gold).ToList();
+                await RemoveDupes(entries);
                 break;
             case 0:
                 entries = entries.OrderByDescending(o => o.Level).ToList();
+                await RemoveDupes(entries);
                 break;
         }
+    }
+
+    private async Task RemoveDupes(List<Entry> records)
+    {
+        Dictionary<User, int> nameCheck = new Dictionary<User, int>();
+        List<Entry> newList = new List<Entry>();
+        for (int i = 0; i < records.Count; i++)
+        {
+            if (records[i].User != null)
+            {
+                if (!nameCheck.ContainsKey(records[i].User))
+                {
+                    Entry newEntry = await _context.Entries.Where(w => w.Id == records[i].Id).FirstAsync();
+                    newList.Add(newEntry);
+                    nameCheck.Add(records[i].User, records[i].Id);
+                }
+            }
+        }
+
+        entries = newList;
+        Loading = false;
     }
 }

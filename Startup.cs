@@ -31,7 +31,7 @@ namespace Vampire_Survivors_Leaderboard
         {
             services.AddDbContext<vswebsiteContext>(options =>
                 options.UseSqlServer(
-                    Configuration.GetConnectionString("DefaultConnection")));
+                    Configuration.GetConnectionString("DefaultConnection")),ServiceLifetime.Transient);
             services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<vswebsiteContext>();
 

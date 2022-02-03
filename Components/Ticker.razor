@@ -1,0 +1,80 @@
+﻿@using Models
+@using Microsoft.EntityFrameworkCore;
+
+@inject vswebsiteContext _context
+
+<div class="TickerBar">
+    <div class="tickerData">
+        <marquee>@((MarkupString)tickerCode)</marquee>
+    </div>
+</div>
+
+@code {
+    public string tickerCode = String.Empty;
+
+    public class TickerInfo
+    {
+        public string Stage { get; set; }
+        public string GoldLeader { get; set; }
+        public string KillsLeader { get; set; }
+        public string LevelLeader { get; set; }
+        public string TimeLeader { get; set; }
+        public string Gold { get; set; }
+        public string Kills { get; set; }
+        public string Level { get; set; }
+        public string Time { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<TickerInfo> tickerInfo = new List<TickerInfo>();
+        List<Stage> stages = await _context.Stages.ToListAsync();
+
+        foreach (Stage stage in stages)
+        {
+            Entry goldLeader = await _context.Entries.Include(i => i.User).Where(w => w.StageId == stage.Id && w.Approved == true && w.Deleted == false)
+                                .OrderByDescending(o => o.Gold).FirstOrDefaultAsync();
+            Entry killLeader = await _context.Entries.Include(i => i.User).Where(w => w.StageId == stage.Id && w.Approved == true && w.Deleted == false)
+                                .OrderByDescending(o => o.Kills).FirstOrDefaultAsync();
+            Entry levelLeader = await _context.Entries.Include(i => i.User).Where(w => w.StageId == stage.Id && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.Level).FirstOrDefaultAsync();
+            Entry timeLeader = await _context.Entries.Include(i => i.User).Where(w => w.StageId == stage.Id && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.SurvivedTime).FirstOrDefaultAsync();
+
+            TickerInfo ticker = new TickerInfo
+            {
+                Stage = stage.Name,
+                GoldLeader = goldLeader.User.DisplayName,
+                KillsLeader = killLeader.User.DisplayName,
+                LevelLeader = levelLeader.User.DisplayName,
+                TimeLeader = timeLeader.User.DisplayName,
+                Gold = goldLeader.Gold.ToString(),
+                Kills = killLeader.Kills.ToString(),
+                Level = levelLeader.Level.ToString(),
+                Time = timeLeader.SurvivedTime.ToString().Replace(".", ":"),
+            };
+            tickerInfo.Add(ticker);
+        }
+        TickerCode(tickerInfo);
+    }
+
+    void TickerCode(List<TickerInfo> tickerInfo)
+    {
+        foreach (TickerInfo ticker in tickerInfo)
+        {
+            tickerCode += "<span style=\"font-size: 1.25em; font-weight: bold; letter-spacing: 2px;\">" + ticker.Stage + "</span>";
+            tickerCode += "<span class=\"category\">Gold Leader:   </span>";
+            tickerCode += "<span class=\"leader\">" + ticker.GoldLeader + "(" + ticker.Gold + ")   " + "    </span>";
+
+            tickerCode += "<span class=\"category\">Kills Leader:    </span>";
+            tickerCode += "<span class=\"leader\">" + ticker.KillsLeader + "(" + ticker.Kills + ")   " + "    </span>";
+
+            tickerCode += "<span class=\"category\">Level Leader:    </span>";
+            tickerCode += "<span class=\"leader\">" + ticker.LevelLeader + "(" + ticker.Level + ")   " + "    </span>";
+
+            tickerCode += "<span class=\"category\">Survival Leader:    </span>";
+            tickerCode += "<span class=\"leader\">" + ticker.TimeLeader + "(" + ticker.Time + ")   " + "    </span>";
+        }
+    }
+
+}

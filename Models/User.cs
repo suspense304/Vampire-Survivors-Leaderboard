@@ -15,6 +15,7 @@ namespace Vampire_Survivors_Leaderboard.Models
         public int Id { get; set; }
         public string UserKey { get; set; }
         public string Name { get; set; }
+        public string DisplayName { get; set; }
         public string DiscordCode { get; set; }
         public bool Admin { get; set; }
 

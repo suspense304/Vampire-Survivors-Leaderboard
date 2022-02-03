@@ -21,7 +21,7 @@
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Id">@(entries.IndexOf(@context) + 1)</MudTd>
-            <MudTd DataLabel="User">@context.User.Name</MudTd>
+            <MudTd DataLabel="User">@context.User.DisplayName</MudTd>
             <MudTd DataLabel="Character">@context.Character.Name</MudTd>
             <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
             @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@

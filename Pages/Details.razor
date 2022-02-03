@@ -26,43 +26,45 @@
         <hr />
         <br />
 
-        <div class="detailRow" style="width: 900px;">
-            <div class="detailCol">
-                <span>@entry.Character.Name: #@characterRank / @characterMaxRank</span>
-            </div>
-            <div class="detailCol">
-                <span style="display: block; width: 100%; text-align: right;">Stage: #@rank / @maxRank</span>
-            </div>
-        </div>
-        <div class="detailFrame" style="width: 900px;">
-            <div class="row">
-                <div class="col-6">
-                    @if (@entry.Video != null)
-                    {
-                        <div class="video-container">
-                            <iframe style="height: 325px;" width="560" src="@videoUrl" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                    }
-                    else
-                    {
-                        <img src="files\novideo.png" style="height: 325px;" width="560" />
-                    }
-
+        <div>
+            <div class="detailRow" style="width: 900px;">
+                <div class="detailCol">
+                    <span>@entry.Character.Name: #@characterRank / @characterMaxRank</span>
                 </div>
-                <div class="col-6" style=" margin: auto;">
-                    @if (@entry.Image != null)
-                    {
-                    <img src="\files\@entry.Image" style="display: block; height: 100%; max-width: 100%; margin: auto;"/>
-                    }
-                    else
-                    {
-                        <img src="files\noimage.jpg" style="display: block; height: 100%; max-width: 100%; margin: auto;"/>
-                    }
+                <div class="detailCol">
+                    <span style="display: block; width: 100%; text-align: right;">Stage: #@rank / @maxRank</span>
+                </div>
+            </div>
+            <div class="detailFrame" style="width: 900px;">
+                <div class="row">
+                    <div class="col-6">
+                        @if (@entry.Video != null)
+                        {
+
+                            <iframe style="height: 325px;" width="560" src="@videoUrl" frameborder="0"></iframe>
+
+                        }
+                        else
+                        {
+                            <img src="files\novideo.png" style="height: 325px;" width="560" />
+                        }
+
+                    </div>
+                    <div class="col-6" style=" margin: auto;">
+                        @if (@entry.Image != null)
+                        {
+                            <img src="\files\@entry.Image" style="display: block; height: 100%; max-width: 100%; margin: auto;" />
+                        }
+                        else
+                        {
+                            <img src="files\noimage.jpg" style="display: block; height: 100%; max-width: 100%; margin: auto;" />
+                        }
+                    </div>
                 </div>
             </div>
             <div class="detailRow" style="width: 900px;">
                 <div class="detailCol">
-                    <span style="display: block; width: 100%;">Submitted by: @entry.User.Name</span>
+                    <span style="display: block; width: 100%;">Submitted by: @entry.User.DisplayName</span>
                 </div>
                 <div class="detailCol">
                     <span style="display: block; width: 100%; text-align: center;">Submitted on: @entry.DateSubmitted</span>
@@ -72,23 +74,47 @@
                 </div>
             </div>
         </div>
+
         <br />
         <MudGrid>
             @if (isAdmin)
             {
-
-                <MudItem><MudButton Variant="Variant.Filled" Color="Color.Primary" type="button" @onclick="() => ApproveEntry()"> Approve </MudButton></MudItem>
-                <MudItem><MudButton Variant="Variant.Filled" Color="Color.Error" type="button" @onclick="() => RejectEntry()"> Reject </MudButton></MudItem>
-                @if (entry.Deleted && isAdmin)
-                {
-                    <MudItem><MudButton Variant="Variant.Filled" Color="Color.Info" type="button" @onclick="() => RestoreEntry()"> Restore </MudButton></MudItem>
-                }
+                <MudGrid Style="width: 800px;">
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudTextField T="Int32" Label="Kills" Variant="Variant.Outlined" @bind-Value="@entry.Kills" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudTextField T="Int32" Label="Gold" Variant="Variant.Outlined" @bind-Value="@entry.Gold" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudTextField T="Int32" Label="Level" Variant="Variant.Outlined" @bind-Value="@entry.Level" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudTextField T="Decimal" Label="Survived" Variant="Variant.Outlined" @bind-Value="@entry.SurvivedTime" />
+                    </MudItem>
+                </MudGrid>
+                <MudGrid Style="width: 800px; margin-top: 20px;">
+                    <MudItem>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" type="button" @onclick="() => ApproveEntry()"> Approve </MudButton>
+                    </MudItem>
+                    <MudItem>
+                        <MudButton Variant="Variant.Filled" Color="Color.Error" type="button" @onclick="() => RejectEntry()"> Reject </MudButton>
+                    </MudItem>
+                    <MudItem>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" type="button" @onclick="() => UpdateEntry()"> Update</MudButton>
+                    </MudItem>
+                    @if (entry.Deleted && isAdmin)
+                    {
+                        <MudItem><MudButton Variant="Variant.Filled" Color="Color.Info" type="button" @onclick="() => RestoreEntry()"> Restore </MudButton></MudItem>
+                    }
+                    @if (!entry.Deleted && (isAdmin || submittedUser))
+                    {
+                        <MudItem><MudButton Variant="Variant.Filled" Color="Color.Warning" type="button" @onclick="() => DeleteEntry()"> Delete </MudButton></MudItem>
+                    }
+                </MudGrid>
 
             }
-            @if (!entry.Deleted && (isAdmin || submittedUser))
-            {
-                <MudItem><MudButton Variant="Variant.Filled" Color="Color.Warning" type="button" @onclick="() => DeleteEntry()"> Delete </MudButton></MudItem>
-            }
+
         </MudGrid>
     }
 
@@ -126,26 +152,10 @@
             entry = await _context.Entries
                 .Include(i => i.Character)
                 .Include(i => i.User)
-                //.Include(i => i.RunType)
                 .Include(i => i.Stage)
                 .Where(w => w.Id == Convert.ToInt32(_id)).FirstOrDefaultAsync();
-            videoUrl = "https://www.youtube.com/embed/" + entry.Video;
-
-            //switch (entry.RunTypeId)
-            //{
-            //    case 1:
-            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Level).ToListAsync();
-            //        break;
-            //    case 2:
-            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Kills).ToListAsync();
-            //        break;
-            //    case 3:
-            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.SurvivedTime).ToListAsync();
-            //        break;
-            //    case 4:
-            //        entries = await _context.Entries.Include(i => i.User).Include(i => i.RunType).Include(i => i.Stage).Where(w => w.RunTypeId == entry.RunTypeId && w.StageId == entry.StageId).OrderByDescending(o => o.Gold).ToListAsync();
-            //        break;
-            //}
+            if (entry.Video != null)
+                videoUrl = VideoUrl(entry.Video);
 
             if (chkUser != null)
             {
@@ -160,6 +170,28 @@
             characterRank = entries.IndexOf(entry) + 1;
             characterMaxRank = entries.Count;
         }
+    }
+
+    private string VideoUrl(string url)
+    {
+        if (url.Contains("youtube"))
+        {
+            url = url.Replace("watch?v=", "embed/");
+        }
+        else if (url.Contains("twitch"))
+        {
+            url = url.Replace("www", "player");
+            url = url.Replace("videos/", "?video=v");
+            url = url + "&parent=vsleaderboard.azurewebsites.net";
+        }
+        return url;
+    }
+
+    private async Task UpdateEntry()
+    {
+        entry.Approved = true;
+        await _context.SaveChangesAsync();
+        Snackbar.Add("Entry has been approved.", Severity.Success);
     }
 
     private async Task ApproveEntry()

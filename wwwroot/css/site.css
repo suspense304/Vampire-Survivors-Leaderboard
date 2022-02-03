@@ -7,6 +7,7 @@
     .AppLink a:visited {
         color: white !important;
     }
+
     .AppLink a:hover {
         color: white !important;
     }
@@ -24,12 +25,12 @@
     min-height: 150px;
 }
 
-    .dropArea:hover{
+    .dropArea:hover {
         background-color: antiquewhite;
         color: #333;
     }
 
-    .dropArea input[type=file]{
+    .dropArea input[type=file] {
         position: absolute;
         width: 100%;
         height: 100%;
@@ -37,11 +38,11 @@
         cursor: pointer;
     }
 
-.dropAreaDrug{
+.dropAreaDrug {
     background-color: darkgray;
 }
 
-.fixedWidth{
+.fixedWidth {
     width: 250px;
 }
 
@@ -54,8 +55,7 @@
     box-sizing: border-box;
 }
 
-.dashboardItem 
-{
+.dashboardItem {
     padding: 15px;
     flex: 1 1 auto;
     margin-bottom: 25px;
@@ -63,7 +63,6 @@
 
 .detailFrame {
     width: 100%;
-    height: 720px;
     display: flex;
     flex-direction: column;
 }
@@ -72,16 +71,13 @@
     width: 100%;
     display: flex;
     flex-direction: row;
-
     padding: 10px;
-
     background-color: #424242ff;
-
     font-size: 1.15em;
     color: white;
 }
 
-.detailCol{
+.detailCol {
     flex: 1 1 auto;
 }
 
@@ -100,52 +96,34 @@
         height: 100%;
     }
 
-/*html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-
-a, .btn-link {
-    color: #0366d6;
-}
-
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
-.content {
-    padding-top: 1.1rem;
-}
-
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
-}
-
-.invalid {
-    outline: 1px solid red;
-}
-
-.validation-message {
-    color: red;
-}
-
-#blazor-error-ui {
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+.TickerBar {
     position: fixed;
-    width: 100%;
-    z-index: 1000;
+    bottom: 0;
+    width: 100vw;
+    line-height: 36px;
+    background-color: #424242ff;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
+.tickerData {
+    width: 100%;
+    color: #fff;
+}
+
+    .tickerData marquee {
+        line-height: 36px;
     }
-*/
+
+        .tickerData marquee span {
+            margin-right: 6px;
+        }
+
+.category {
+    font-size: 1.05em;
+    font-style: italic;
+    margin-right: 2px;
+}
+
+.leader {
+    font-size: 1.05em;
+    font-weight: bold;
+}
