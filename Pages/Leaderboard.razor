@@ -89,7 +89,7 @@ else
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Id"><a href=@("/Entry?id=" + @context.Id)>@(entries.IndexOf(@context) + 1)</a></MudTd>
-            <MudTd DataLabel="User">@context.User.DisplayName</MudTd>
+            <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
             <MudTd DataLabel="Character">@context.Character.Name</MudTd>
             <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
             @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
@@ -98,10 +98,11 @@ else
             <MudTd DataLabel="Gold">@context.Gold</MudTd>
             <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
         </RowTemplate>
-        @*<PagerContent>
-                <MudTablePager PageSizeOptions="new int[]{50, 100}" />
-            </PagerContent>*@
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+        </PagerContent>
     </MudTable>
+
 }
 
 @code {
@@ -124,19 +125,19 @@ else
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
 
-    private async Task StageChanged(ChangeEventArgs e)
+    private void StageChanged(ChangeEventArgs e)
     {
         stageId = Convert.ToInt32(e.Value);
         RefreshList();
     }
 
-    private async Task CharacterChanged(ChangeEventArgs e)
+    private void CharacterChanged(ChangeEventArgs e)
     {
         characterId = Convert.ToInt32(e.Value);
         RefreshList();
     }
 
-    private async Task RunTypeChanged(ChangeEventArgs e)
+    private void RunTypeChanged(ChangeEventArgs e)
     {
         runTypeId = Convert.ToInt32(e.Value);
         RefreshList();
@@ -148,10 +149,8 @@ else
             .Include(i => i.User)
             .Include(i => i.Stage)
             .Include(i => i.Character)
-            //.Include(i => i.RunType)
             .Where(w => (characterId == 0 || w.CharacterId == characterId)
             && (stageId == 0 || w.StageId == stageId)
-            //&& (runTypeId == 0 || w.RunTypeId == runTypeId)
             && w.Approved == true
             && w.Deleted == false).ToListAsync();
         await SortList();
@@ -169,10 +168,24 @@ else
         if (entry.Stage.Name.ToString().StartsWith(Filter, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        //if (entry.RunType.Name.ToString().StartsWith(Filter, StringComparison.OrdinalIgnoreCase))
-        //    return true;
-
         return false;
+    }
+
+    private async Task<List<Entry>> RemoveDupes(List<Entry> records)
+    {
+        Dictionary<User, int> nameCheck = new Dictionary<User, int>();
+        List<Entry> newList = new List<Entry>();
+        for (int i = 0; i < records.Count; i++)
+        {
+            if (!nameCheck.ContainsKey(records[i].User))
+            {
+                Entry newEntry = await _context.Entries.Where(w => w.Id == records[i].Id).FirstAsync();
+                newList.Add(newEntry);
+                nameCheck.Add(records[i].User, records[i].Id);
+            }
+        }
+        Loading = false;
+        return newList;
     }
 
     protected override async Task OnInitializedAsync()
@@ -189,10 +202,8 @@ else
             .Include(i => i.User)
             .Include(i => i.Stage)
             .Include(i => i.Character)
-            //.Include(i => i.RunType)
             .Where(w => (characterId == 0 || w.CharacterId == characterId)
             && (stageId == 0 || w.StageId == stageId)
-            //&& (runTypeId == 0 || w.RunTypeId == runTypeId)
             && w.Approved == true
             && w.Deleted == false).ToListAsync();
         await SortList();
@@ -205,47 +216,101 @@ else
         switch (runTypeId)
         {
             case 1:
-                entries = entries
-                    .OrderByDescending(o => o.Level).ToList();
-                await RemoveDupes(entries);
+                entries = entries.OrderByDescending(o => o.Level).ToList();
+                entries = entries.GroupBy(g => (g.User, g.Stage, g.Character, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime, g.StageId, g.Image, g.Video, g.CharacterId))
+                    .Select(s => new Entry
+                    {
+                        Approved = true,
+                        Deleted = false,
+                        Id = s.Key.Id,
+                        UserId = s.Key.UserId,
+                        DateSubmitted = DateTime.Now,
+                        Character = s.Key.Character,
+                        CharacterId = s.Key.CharacterId,
+                        Gold = s.Key.Gold,
+                        Image = s.Key.Image,
+                        Video = s.Key.Video,
+                        Kills = s.Key.Kills,
+                        Level = s.Max(m => m.Level),
+                        Stage = s.Key.Stage,
+                        StageId = stageId,
+                        SurvivedTime = s.Key.SurvivedTime,
+                        User = s.Key.User,
+                    }).ToList();
+                entries = await RemoveDupes(entries);
                 break;
             case 2:
                 entries = entries.OrderByDescending(o => o.Kills).ToList();
-                await RemoveDupes(entries);
+                entries = entries.GroupBy(g => (g.User, g.Stage, g.Character, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime, g.StageId, g.Image, g.Video, g.CharacterId))
+                    .Select(s => new Entry
+                    {
+                        Approved = true,
+                        Deleted = false,
+                        Id = s.Key.Id,
+                        UserId = s.Key.UserId,
+                        Character = s.Key.Character,
+                        CharacterId = s.Key.CharacterId,
+                        DateSubmitted = DateTime.Now,
+                        Gold = s.Key.Gold,
+                        Image = s.Key.Image,
+                        Video = s.Key.Video,
+                        Kills = s.Max(m => m.Kills),
+                        Level = s.Key.Level,
+                        Stage = s.Key.Stage,
+                        StageId = stageId,
+                        SurvivedTime = s.Key.SurvivedTime,
+                        User = s.Key.User
+                    }).ToList();
+                entries = await RemoveDupes(entries);
                 break;
             case 3:
                 entries = entries.OrderByDescending(o => o.SurvivedTime).ToList();
-                await RemoveDupes(entries);
+                entries = entries.GroupBy(g => (g.User, g.Stage, g.Character, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime, g.StageId, g.Image, g.Video, g.CharacterId))
+                    .Select(s => new Entry
+                    {
+                        Approved = true,
+                        Deleted = false,
+                        Id = s.Key.Id,
+                        UserId = s.Key.UserId,
+                        Character = s.Key.Character,
+                        CharacterId = s.Key.CharacterId,
+                        DateSubmitted = DateTime.Now,
+                        Gold = s.Key.Gold,
+                        Image = s.Key.Image,
+                        Video = s.Key.Video,
+                        Kills = s.Key.Kills,
+                        Level = s.Key.Level,
+                        Stage = s.Key.Stage,
+                        StageId = stageId,
+                        SurvivedTime = s.Max(m => m.SurvivedTime),
+                        User = s.Key.User,
+                    }).ToList();
+                entries = await RemoveDupes(entries);
                 break;
             case 4:
                 entries = entries.OrderByDescending(o => o.Gold).ToList();
-                await RemoveDupes(entries);
-                break;
-            case 0:
-                entries = entries.OrderByDescending(o => o.Level).ToList();
-                await RemoveDupes(entries);
+                entries = entries.GroupBy(g => (g.User, g.Stage, g.Character, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime, g.StageId, g.Image, g.Video, g.CharacterId))
+                    .Select(s => new Entry
+                    {
+                        Approved = true,
+                        Deleted = false,
+                        Id = s.Key.Id,
+                        UserId = s.Key.UserId,
+                        Character = s.Key.Character,
+                        CharacterId = s.Key.CharacterId,
+                        DateSubmitted = DateTime.Now,
+                        Gold = s.Max(m => m.Gold),
+                        Image = s.Key.Image,
+                        Video = s.Key.Video,
+                        Kills = s.Key.Kills,
+                        Level = s.Key.Level,
+                        Stage = s.Key.Stage,
+                        StageId = stageId,
+                        SurvivedTime = s.Key.SurvivedTime,
+                        User = s.Key.User,
+                    }).ToList();
+                entries = await RemoveDupes(entries);
                 break;
         }
-    }
-
-    private async Task RemoveDupes(List<Entry> records)
-    {
-        Dictionary<User, int> nameCheck = new Dictionary<User, int>();
-        List<Entry> newList = new List<Entry>();
-        for (int i = 0; i < records.Count; i++)
-        {
-            if (records[i].User != null)
-            {
-                if (!nameCheck.ContainsKey(records[i].User))
-                {
-                    Entry newEntry = await _context.Entries.Where(w => w.Id == records[i].Id).FirstAsync();
-                    newList.Add(newEntry);
-                    nameCheck.Add(records[i].User, records[i].Id);
-                }
-            }
-        }
-
-        entries = newList;
-        Loading = false;
     }
 }

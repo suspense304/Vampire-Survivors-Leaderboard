@@ -3,58 +3,56 @@
 @using Models
 @using Microsoft.EntityFrameworkCore;
 @using System.Security.Claims
-@using System.Diagnostics 
+@using System.Diagnostics
 
 @inject vswebsiteContext _context
 
 
 
 
-    <div style="width: 100%; text-align: center;"><h2>Top Players</h2></div>
-    <div class="dashboardItem">
-        <MudTable Items="@topPlayers" Dense="true" Hover="true" FixedHeader="true">
-            <HeaderContent>
-                <MudTh>Place</MudTh>
-                <MudTh>User</MudTh>
-                <MudTh>Points</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="User">@(topPlayers.IndexOf(@context) + 1)</MudTd>
-                <MudTd DataLabel="User">@context.User.DisplayName</MudTd>
-                <MudTd DataLabel="User">@context.Points</MudTd>
-            </RowTemplate>
-        </MudTable>
-    </div>
-    <br />
-    <hr />
-    <br />
-    <div style="width: 100%; text-align: center;"><h2>Newest Submissions</h2></div>
-    <div class="dashboardItem">
-        <MudTable Items="@entries" Dense="true" Hover="true" FixedHeader="true">
-            <HeaderContent>
-                <MudTh>User</MudTh>
-                <MudTh>Character</MudTh>
-                <MudTh>Stage</MudTh>
-                @*<MudTh>Run Type</MudTh>*@
-                <MudTh>Kills</MudTh>
-                <MudTh>Level</MudTh>
-                <MudTh>Gold</MudTh>
-                <MudTh>Survived Time</MudTh>
-                <MudTh></MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="User">@context.User.DisplayName</MudTd>
-                <MudTd DataLabel="Character">@context.Character.Name</MudTd>
-                <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-                @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
-                <MudTd DataLabel="Kills">@context.Kills</MudTd>
-                <MudTd DataLabel="Level">@context.Level</MudTd>
-                <MudTd DataLabel="Gold">@context.Gold</MudTd>
-                <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
-                <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
-            </RowTemplate>
-        </MudTable>
-    </div>
+<div style="width: 100%; text-align: center;"><h2>Top Players</h2></div>
+<div class="dashboardItem">
+    <MudTable Items="@topPlayers" Dense="true" Hover="true" FixedHeader="true">
+        <HeaderContent>
+            <MudTh>Place</MudTh>
+            <MudTh>User</MudTh>
+            <MudTh>Points</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="User">@(topPlayers.IndexOf(@context) + 1)</MudTd>
+            <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
+            <MudTd DataLabel="User">@context.Points</MudTd>
+        </RowTemplate>
+    </MudTable>
+</div>
+<br />
+<hr />
+<br />
+<div style="width: 100%; text-align: center;"><h2>Newest Submissions</h2></div>
+<div class="dashboardItem">
+    <MudTable Items="@entries" Dense="true" Hover="true" FixedHeader="true">
+        <HeaderContent>
+            <MudTh>User</MudTh>
+            <MudTh>Character</MudTh>
+            <MudTh>Stage</MudTh>
+            <MudTh>Kills</MudTh>
+            <MudTh>Level</MudTh>
+            <MudTh>Gold</MudTh>
+            <MudTh>Survived Time</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
+            <MudTd DataLabel="Character">@context.Character.Name</MudTd>
+            <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
+            <MudTd DataLabel="Kills">@context.Kills</MudTd>
+            <MudTd DataLabel="Level">@context.Level</MudTd>
+            <MudTd DataLabel="Gold">@context.Gold</MudTd>
+            <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
+            <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
+        </RowTemplate>
+    </MudTable>
+</div>
 
 
 
@@ -86,7 +84,6 @@
         .Include(i => i.User)
         .Include(i => i.Stage)
         .Include(i => i.Character)
-        //.Include(i => i.RunType)
         .Where(w => w.Approved == true && w.Deleted == false)
         .OrderByDescending(o => o.DateSubmitted)
         .Take(10)
@@ -111,7 +108,6 @@
         }
         return newList;
     }
-
     private List<CompositeStats> CalculatePoints(List<CompositeStats> lst)
     {
         List<int> pointsAwarded = new List<int> { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
@@ -127,93 +123,144 @@
 
             //Sort List By Kills
             Debug.WriteLine(stage.Name + " Kills Leaders");
-            records = _context.Entries.Include(i => i.User)
+            records = _context.Entries
+            .Include(i => i.User)
             .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
             .OrderByDescending(o => o.Kills)
             .ToList();
 
-            records = RemoveDupes(records);
-            lstCount = (records.Count < 10) ? records.Count : 10;
+            var killsRecords = _context.Entries
+                            .Include(i => i.User)
+                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.Kills)
+                            .ToList()
+                            .GroupBy(g => (g.User))
+                            .Select(s => s.First()).ToList();
 
-            if (records.Count > 0)
+            //records = RemoveDupes(records);
+            lstCount = (killsRecords.Count < 10) ? records.Count : 10;
+
+
+            if (killsRecords.Count > 0)
             {
                 for (int i = 0; i < lstCount; i++)
                 {
-                    if (playerPoints.ContainsKey(records[i].User))
+                    if (killsRecords[i].User != null)
                     {
-                        playerPoints[records[i].User] += pointsAwarded[i];
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        if (playerPoints.ContainsKey(killsRecords[i].User))
+                        {
+                            playerPoints[killsRecords[i].User] += pointsAwarded[i];
+                            Debug.WriteLine(killsRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
+                        else
+                        {
+                            playerPoints.Add(killsRecords[i].User, pointsAwarded[i]);
+                            Debug.WriteLine(killsRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
                     }
                     else
                     {
-                        playerPoints.Add(records[i].User, pointsAwarded[i]);
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        Debug.WriteLine("How the fuck did this happen?");
                     }
                 }
 
                 //Sort List By Gold
                 Debug.WriteLine(stage.Name + " Gold Leaders");
-                records = _context.Entries.Include(i => i.User)
-                .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-                .OrderByDescending(o => o.Gold).Take(10).ToList();
 
-                records = RemoveDupes(records);
-                lstCount = (records.Count < 10) ? records.Count : 10;
+                var goldRecords= _context.Entries
+                            .Include(i => i.User)
+                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.Gold)
+                            .ToList()
+                            .GroupBy(g => (g.User))
+                            .Select(s => s.First()).ToList();
+
+
+                lstCount = (goldRecords.Count < 10) ? goldRecords.Count : 10;
                 for (int i = 0; i < lstCount; i++)
                 {
-                    if (playerPoints.ContainsKey(records[i].User))
+                    if (goldRecords[i].User != null)
                     {
-                        playerPoints[records[i].User] += pointsAwarded[i];
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        if (playerPoints.ContainsKey(goldRecords[i].User))
+                        {
+                            playerPoints[goldRecords[i].User] += pointsAwarded[i];
+                            Debug.WriteLine(goldRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
+                        else
+                        {
+                            playerPoints.Add(goldRecords[i].User, pointsAwarded[i]);
+                            Debug.WriteLine(goldRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
                     }
                     else
                     {
-                        playerPoints.Add(records[i].User, pointsAwarded[i]);
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        Debug.WriteLine("How the fuck did this happen?");
                     }
                 }
 
                 //Sort List By Level
                 Debug.WriteLine(stage.Name + " Level Leaders");
-                records = _context.Entries.Include(i => i.User)
-                    .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-                    .OrderByDescending(o => o.Level).Take(10).ToList();
+                var levelRecords = _context.Entries
+                            .Include(i => i.User)
+                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.Level)
+                            .ToList()
+                            .GroupBy(g => (g.User))
+                            .Select(s => s.First()).ToList();
 
-                records = RemoveDupes(records);
-                lstCount = (records.Count < 10) ? records.Count : 10;
+
+                lstCount = (levelRecords.Count < 10) ? levelRecords.Count : 10;
                 for (int i = 0; i < lstCount; i++)
                 {
-                    if (playerPoints.ContainsKey(records[i].User))
+                    if (levelRecords[i].User != null)
                     {
-                        playerPoints[records[i].User] += pointsAwarded[i];
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        if (playerPoints.ContainsKey(levelRecords[i].User))
+                        {
+                            playerPoints[levelRecords[i].User] += pointsAwarded[i];
+                            Debug.WriteLine(levelRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
+                        else
+                        {
+                            playerPoints.Add(levelRecords[i].User, pointsAwarded[i]);
+                            Debug.WriteLine(levelRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
                     }
                     else
                     {
-                        playerPoints.Add(records[i].User, pointsAwarded[i]);
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        Debug.WriteLine("How the fuck did this happen?");
                     }
                 }
 
                 //Sort List By Survived
                 Debug.WriteLine(stage.Name + " Survived Leaders");
-                records = _context.Entries.Include(i => i.User)
-                    .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-                    .OrderByDescending(o => o.SurvivedTime).Take(10).ToList();
+                var timeRecords = _context.Entries
+                            .Include(i => i.User)
+                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.SurvivedTime)
+                            .ToList()
+                            .GroupBy(g => (g.User))
+                            .Select(s => s.First()).ToList();
 
-                records = RemoveDupes(records);
-                lstCount = (records.Count < 10) ? records.Count : 10;
+
+                lstCount = (timeRecords.Count < 10) ? timeRecords.Count : 10;
                 for (int i = 0; i < lstCount; i++)
                 {
-                    if (playerPoints.ContainsKey(records[i].User))
+                    if (timeRecords[i].User != null)
                     {
-                        playerPoints[records[i].User] += pointsAwarded[i];
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        if (playerPoints.ContainsKey(timeRecords[i].User))
+                        {
+                            playerPoints[timeRecords[i].User] += pointsAwarded[i];
+                            Debug.WriteLine(timeRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
+                        else
+                        {
+                            playerPoints.Add(timeRecords[i].User, pointsAwarded[i]);
+                            Debug.WriteLine(timeRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        }
                     }
                     else
                     {
-                        playerPoints.Add(records[i].User, pointsAwarded[i]);
-                        Debug.WriteLine(records[i].User.Name + " + " + pointsAwarded[i].ToString());
+                        Debug.WriteLine("How the fuck did this happen?");
                     }
                 }
             }

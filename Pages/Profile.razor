@@ -1,0 +1,368 @@
+﻿@page "/Profile"
+
+@using Models
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.AspNetCore.WebUtilities;
+@using System.Diagnostics;
+@using Classes;
+
+@inject NavigationManager NavManager
+@inject vswebsiteContext _context
+
+<style>
+    .profileSection {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        padding: 0;
+        margin: auto;
+    }
+
+    .profileTop {
+        height: 2px;
+        background-color: #594ae2ff;
+        padding: 0;
+        margin: 0;
+    }
+
+    .profileTitle {
+        color: #e8f4ff;
+        padding: 5px 0px 5px 10px;
+        font-size: 1.15em;
+        font-weight: bold;
+        background-color: #272323;
+    }
+
+    .profileContent {
+        color: white;
+        background-color: rgb(33 31 31 / 0.95);
+    }
+
+    .profileFooter {
+        height: 2px;
+        background-color: #100f0f;
+        padding: 0;
+        margin: 0;
+    }
+</style>
+
+@if (Loading)
+{
+    <h3>Data Loading</h3>
+}
+else
+{
+    @if (user != null)
+    {
+        <div class="profileSection">
+            <div class="profileTop"></div>
+            <div class="profileTitle">
+                @user.DisplayName
+            </div>
+            <div class="profileContent">
+                @if (entries != null)
+                {
+                    <MudTable Items="@entries" Dense="true" Hover="true" FixedHeader="true">
+                        <HeaderContent>
+                            <MudTh>Stage</MudTh>
+                            <MudTh>Kills</MudTh>
+                            <MudTh>Level</MudTh>
+                            <MudTh>Gold</MudTh>
+                            <MudTh>Survived Time</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Stage">@context.StageName </MudTd>
+                            <MudTd DataLabel="Kills">@context.Kills <sup>@context.KillsPlace</sup></MudTd>
+                            <MudTd DataLabel="Level">@context.Level <sup>@context.LevelPlace</sup></MudTd>
+                            <MudTd DataLabel="Gold">@context.Gold <sup>@context.GoldPlace</sup></MudTd>
+                            <MudTd DataLabel="Survived Time">@context.TimeSurvived <sup>@context.TimePlace</sup></MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <h3>No Data</h3>
+                }
+            </div>
+            <div class="profileFooter"></div>
+        </div>
+    }
+    else
+    {
+        <h2>User does not exist.</h2>
+    }
+}
+
+
+@code {
+    List<ProfileStats> entries = new List<ProfileStats>();
+    List<Entry> records = new List<Entry>();
+    User user;
+
+    bool Loading = true;
+
+    public class TotalRuns
+    {
+        public string StageName { get; set; }
+        public int Runs { get; set; }
+    }
+
+    public class ProfileStats
+    {
+        public string StageName { get; set; }
+        public int Kills { get; set; }
+        public int Gold { get; set; }
+        public int Level { get; set; }
+        public double TimeSurvived { get; set; }
+        public string KillsPlace { get; set; }
+        public string GoldPlace { get; set; }
+        public string LevelPlace { get; set; }
+        public string TimePlace { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<Stage> stages = await _context.Stages.ToListAsync();
+
+        Helpers _helper = new Helpers();
+
+        int stageCount = stages.Count;
+
+        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("id", out var _id))
+        {
+            user = await _context.Users.Where(w => w.Id == Convert.ToInt32(_id)).FirstOrDefaultAsync();
+
+            if (Convert.ToInt32(_id) > 0)
+            {
+                for (int i = 1; i < stageCount + 1; i++)
+                {
+                    ProfileStats stats = new ProfileStats();
+                    List<Entry> entryList = await _context.Entries.Where(w => w.StageId == i &&
+                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
+                        .OrderByDescending(o => o.Gold)
+                        .ToListAsync();
+                    if (entryList.Count > 0)
+                    {
+                        Stage currentStage = await _context.Stages.Where(w => w.Id == i).FirstAsync();
+                        stats.StageName = currentStage.Name;
+
+                        // Get Gold Value
+                        var goldRecords = _context.Entries
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.Gold)
+                            .ToList()
+                            .GroupBy(g => (g.UserId))
+                            .Select(s => s.First()).ToList();
+
+                        if (entryList != null)
+                        {
+                            stats.Gold = entryList.Max(m => m.Gold);
+                            stats.GoldPlace = _helper.GetOrdinalSuffix((goldRecords.FindIndex(i => i.UserId == user.Id)) + 1);
+                        }
+                        else
+                        {
+                            stats.Gold = 0;
+                            stats.GoldPlace = "NA";
+                        }
+
+
+                        // Get Kill Value
+                        entryList = await _context.Entries.Where(w => w.StageId == i &&
+                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
+                        .OrderByDescending(o => o.Kills)
+                        .ToListAsync();
+
+                        var killsRecords = _context.Entries
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.Kills)
+                            .ToList()
+                            .GroupBy(g => (g.UserId))
+                            .Select(s => s.First()).ToList();
+
+                        if (entryList != null)
+                        {
+                            stats.Kills = entryList.Max(m => m.Kills);
+                            stats.KillsPlace = _helper.GetOrdinalSuffix((killsRecords.FindIndex(i => i.UserId == user.Id)) + 1);
+                        }
+                        else
+                        {
+                            stats.Kills = 0;
+                            stats.KillsPlace = "NA";
+                        }
+
+                        // Get Level Value
+                        entryList = await _context.Entries.Where(w => w.StageId == i &&
+                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
+                        .OrderByDescending(o => o.Level)
+                        .ToListAsync();
+
+                        var levelRecords = _context.Entries
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.Level)
+                            .ToList()
+                            .GroupBy(g => (g.UserId))
+                            .Select(s => s.First()).ToList();
+
+                        if (entryList != null)
+                        {
+                            stats.Level = entryList.Max(m => m.Level);
+                            stats.LevelPlace = _helper.GetOrdinalSuffix((levelRecords.FindIndex(i => i.UserId == user.Id)) + 1);
+                        }
+                        else
+                        {
+                            stats.Level = 0;
+                            stats.LevelPlace = "NA";
+                        }
+
+                        // Get Time Value
+                        entryList = await _context.Entries.Where(w => w.StageId == i &&
+                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
+                        .OrderByDescending(o => o.SurvivedTime)
+                        .ToListAsync();
+
+                        var timeRecords = _context.Entries
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .OrderByDescending(o => o.SurvivedTime)
+                            .ToList()
+                            .GroupBy(g => (g.UserId))
+                            .Select(s => s.First()).ToList();
+
+                        if (entryList != null)
+                        {
+                            stats.TimeSurvived = Convert.ToDouble(entryList.Max(m => m.SurvivedTime));
+                            stats.TimePlace = _helper.GetOrdinalSuffix((timeRecords.FindIndex(i => i.UserId == user.Id)) + 1);
+                        }
+                        else
+                        {
+                            stats.TimeSurvived = 0;
+                            stats.TimePlace = "NA";
+                        }
+
+                        entries.Add(stats);
+                    }
+                }
+            }
+            Loading = false;
+            StateHasChanged();
+        }
+
+    }
+
+    private async Task<List<Entry>> RemoveDupes(List<Entry> records)
+    {
+        if(records != null && records.Count > 0)
+        {
+            Dictionary<User, int> nameCheck = new Dictionary<User, int>();
+            List<Entry> newList = new List<Entry>();
+            for (int i = 0; i < records.Count; i++)
+            {
+                if (!nameCheck.ContainsKey(records[i].User))
+                {
+                    Entry newEntry = await _context.Entries.Where(w => w.Id == records[i].Id).FirstAsync();
+                    newList.Add(newEntry);
+                    nameCheck.Add(records[i].User, records[i].Id);
+                }
+            }
+            return newList;
+        }
+        return new List<Entry>();
+    }
+
+    private async Task SortList(int runTypeId, int stageId)
+    {
+        switch (runTypeId)
+        {
+            case 1:
+                records = records.OrderByDescending(o => o.Level).ToList();
+                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
+                {
+                    Approved = true,
+                    Deleted = false,
+                    Id = s.Key.Id,
+                    UserId = s.Key.UserId,
+                    CharacterId = 1,
+                    DateSubmitted = DateTime.Now,
+                    Character = null,
+                    Gold = s.Key.Gold,
+                    Image = null,
+                    Video = null,
+                    Kills = s.Key.Kills,
+                    Level = s.Max(m => m.Level),
+                    Stage = null,
+                    StageId = stageId,
+                    SurvivedTime = s.Key.SurvivedTime,
+                    User = s.Key.User
+                }).ToList();
+
+                break;
+            case 2:
+                records = records.OrderByDescending(o => o.Kills).ToList();
+                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
+                {
+                    Approved = true,
+                    Deleted = false,
+                    Id = s.Key.Id,
+                    UserId = s.Key.UserId,
+                    CharacterId = 1,
+                    DateSubmitted = DateTime.Now,
+                    Character = null,
+                    Gold = s.Key.Gold,
+                    Image = null,
+                    Video = null,
+                    Kills = s.Max(m => m.Kills),
+                    Level = s.Key.Level,
+                    Stage = null,
+                    StageId = stageId,
+                    SurvivedTime = s.Key.SurvivedTime,
+                    User = s.Key.User
+                }).ToList();
+
+                break;
+            case 3:
+                records = records.OrderByDescending(o => o.SurvivedTime).ToList();
+                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
+                {
+                    Approved = true,
+                    Deleted = false,
+                    Id = s.Key.Id,
+                    UserId = s.Key.UserId,
+                    CharacterId = 1,
+                    DateSubmitted = DateTime.Now,
+                    Character = null,
+                    Gold = s.Key.Gold,
+                    Image = null,
+                    Video = null,
+                    Kills = s.Key.Kills,
+                    Level = s.Key.Level,
+                    Stage = null,
+                    StageId = stageId,
+                    SurvivedTime = s.Max(m => m.SurvivedTime),
+                    User = s.Key.User
+                }).ToList();
+                break;
+            case 4:
+                records = records.OrderByDescending(o => o.Gold).ToList();
+                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
+                {
+                    Approved = true,
+                    Deleted = false,
+                    Id = s.Key.Id,
+                    UserId = s.Key.UserId,
+                    CharacterId = 1,
+                    DateSubmitted = DateTime.Now,
+                    Character = null,
+                    Gold = s.Max(m => m.Gold),
+                    Image = null,
+                    Video = null,
+                    Kills = s.Key.Kills,
+                    Level = s.Key.Level,
+                    Stage = null,
+                    StageId = stageId,
+                    SurvivedTime = s.Key.SurvivedTime,
+                    User = s.Key.User
+                }).ToList();
+                break;
+        }
+    }
+}

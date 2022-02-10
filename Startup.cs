@@ -55,7 +55,6 @@ namespace Vampire_Survivors_Leaderboard
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddMudServices();
-            //services.AddScoped<AzureStorageHelper>();
         }
 
 
