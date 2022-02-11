@@ -12,6 +12,64 @@
         color: white !important;
     }
 
+.profileSection {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0;
+    margin: auto;
+}
+
+.profileTop {
+    height: 2px;
+    background-color: #594ae2ff;
+    padding: 0;
+    margin: 0;
+}
+
+.profileTitle {
+    color: #e8f4ff;
+    padding: 5px 0px 5px 10px;
+    font-size: 1.15em;
+    font-weight: bold;
+    background-color: #272323;
+}
+
+.profileContent {
+    color: white;
+    background-color: rgb(33 31 31 / 0.95);
+    border: 1px solid #272323;
+}
+
+.profileFooter {
+    height: 2px;
+    background-color: #100f0f;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0px 2px 3px 1px rgba(0,0,0,0.59);
+}
+
+.RankingCard {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    line-height: 16px;
+    background-color: #fefefe;
+    color: rgb(33 31 31 / 0.95);
+    min-width: 250px;
+    border: 1px solid #272323;
+    margin-right: 5px;
+    box-shadow: 0px 2px 3px 1px rgba(0,0,0,0.59);
+}
+
+.RankingContainer {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    padding: 0;
+    margin: auto;
+}
+
 .dropArea {
     border: 2px dashed gray;
     padding: 10px;

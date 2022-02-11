@@ -4,72 +4,66 @@
 @using Microsoft.EntityFrameworkCore;
 @using System.Security.Claims
 @using System.Diagnostics
+@using Classes
 
 @inject vswebsiteContext _context
 
-
-
-
 <div style="width: 100%; text-align: center;"><h2>Top Players</h2></div>
 <div class="dashboardItem">
-    <MudTable Items="@topPlayers" Dense="true" Hover="true" FixedHeader="true">
-        <HeaderContent>
-            <MudTh>Place</MudTh>
-            <MudTh>User</MudTh>
-            <MudTh>Points</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="User">@(topPlayers.IndexOf(@context) + 1)</MudTd>
-            <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
-            <MudTd DataLabel="User">@context.Points</MudTd>
-        </RowTemplate>
-    </MudTable>
+    <div class="profileContent" style="box-shadow: 0px 2px 3px 1px rgba(0,0,0,0.59);">
+        <MudTable Items="@topPlayers" Dense="true" Hover="true" FixedHeader="true">
+            <HeaderContent>
+                <MudTh>Place</MudTh>
+                <MudTh>User</MudTh>
+                <MudTh>Points</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="User">@(topPlayers.IndexOf(@context) + 1)</MudTd>
+                <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
+                <MudTd DataLabel="User">@context.Points</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
 </div>
 <br />
-<hr />
 <br />
 <div style="width: 100%; text-align: center;"><h2>Newest Submissions</h2></div>
 <div class="dashboardItem">
-    <MudTable Items="@entries" Dense="true" Hover="true" FixedHeader="true">
-        <HeaderContent>
-            <MudTh>User</MudTh>
-            <MudTh>Character</MudTh>
-            <MudTh>Stage</MudTh>
-            <MudTh>Kills</MudTh>
-            <MudTh>Level</MudTh>
-            <MudTh>Gold</MudTh>
-            <MudTh>Survived Time</MudTh>
-            <MudTh></MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
-            <MudTd DataLabel="Character">@context.Character.Name</MudTd>
-            <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-            <MudTd DataLabel="Kills">@context.Kills</MudTd>
-            <MudTd DataLabel="Level">@context.Level</MudTd>
-            <MudTd DataLabel="Gold">@context.Gold</MudTd>
-            <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
-            <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
-        </RowTemplate>
-    </MudTable>
+    <div class="profileContent" style="box-shadow: 0px 2px 3px 1px rgba(0,0,0,0.59);">
+        <MudTable Items="@entries" Dense="true" Hover="true" FixedHeader="true">
+            <HeaderContent>
+                <MudTh>User</MudTh>
+                <MudTh>Character</MudTh>
+                <MudTh>Stage</MudTh>
+                <MudTh>Kills</MudTh>
+                <MudTh>Level</MudTh>
+                <MudTh>Gold</MudTh>
+                <MudTh>Survived Time</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
+                <MudTd DataLabel="Character">@context.Character.Name</MudTd>
+                <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
+                <MudTd DataLabel="Kills">@context.Kills</MudTd>
+                <MudTd DataLabel="Level">@context.Level</MudTd>
+                <MudTd DataLabel="Gold">@context.Gold</MudTd>
+                <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
+                <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
 </div>
 
 
 
 @code {
     bool isAdmin;
-
     List<Entry> entries = new List<Entry>();
     List<CompositeStats> topPlayers = new List<CompositeStats>();
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
-
-    public class CompositeStats
-    {
-        public User User { get; set; }
-        public int Points { get; set; }
-    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,7 +131,6 @@
                             .GroupBy(g => (g.User))
                             .Select(s => s.First()).ToList();
 
-            //records = RemoveDupes(records);
             lstCount = (killsRecords.Count < 10) ? records.Count : 10;
 
 
@@ -167,7 +160,7 @@
                 //Sort List By Gold
                 Debug.WriteLine(stage.Name + " Gold Leaders");
 
-                var goldRecords= _context.Entries
+                var goldRecords = _context.Entries
                             .Include(i => i.User)
                             .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
                             .OrderByDescending(o => o.Gold)

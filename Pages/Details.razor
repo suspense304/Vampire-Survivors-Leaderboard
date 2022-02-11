@@ -37,27 +37,16 @@
             </div>
             <div class="detailFrame" style="width: 900px;">
                 <div class="row">
-                    <div class="col-6">
+                    <div class="col-12">
                         @if (@entry.Video != null)
                         {
 
                             <iframe style="height: 325px;" width="560" src="@videoUrl" frameborder="0"></iframe>
 
                         }
-                        else
-                        {
-                            <img src="files\novideo.png" style="height: 325px;" width="560" />
-                        }
-
-                    </div>
-                    <div class="col-6" style=" margin: auto;">
-                        @if (@entry.Image != null)
+                        @if (@entry.Image != null && entry.Video == null)
                         {
                             <img src="\files\@entry.Image" style="display: block; height: 100%; max-width: 100%; margin: auto;" />
-                        }
-                        else
-                        {
-                            <img src="files\noimage.jpg" style="display: block; height: 100%; max-width: 100%; margin: auto;" />
                         }
                     </div>
                 </div>

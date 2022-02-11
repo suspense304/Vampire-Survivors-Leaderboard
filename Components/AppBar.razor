@@ -1,18 +1,28 @@
-﻿<MudAppBar Elevation="3" Color="Color.Dark">
+﻿@using Models
+@using Microsoft.EntityFrameworkCore;
+@using System.Security.Claims
+
+@inject vswebsiteContext _context
+
+<MudAppBar Elevation="3" Color="Color.Dark">
     <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                    OnClick="async () => await OnSidebarToggled.InvokeAsync()" />
     <h2 style="color: #fff;">Vampire Survivor Leaderboards</h2>
     <MudAppBarSpacer />
     <AuthorizeView>
         <Authorized>
-            <span>Hello, @context.User.Identity.Name! </span><div style="height: 75%; background-color: #424242ff; width: 2px; margin: 0px 4px 0px 4px;"></div>
+            <a style="color: #fff;" href=@("/Profile?id=" + userId)>My Profile</a><div style="height: 75%; background-color: #424242ff; width: 2px; margin: 0px 4px 0px 4px;"></div>
             <a href="Account/Logout" style="color: white;"> Log out</a>
         </Authorized>
         <NotAuthorized>
             <a href="Account/Login" style="color: white;"> Log in</a>
         </NotAuthorized>
     </AuthorizeView>
-
+    <form style="margin-left: 25px; margin-right: 5px; padding-top: 10px;" action="https://www.paypal.com/donate" method="post" target="_top">
+        <input type="hidden" name="hosted_button_id" value="PVXRKXH9NYLW4" />
+        <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+        <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+    </form>
     @if (_isLightMode)
     {
         <MudIconButton Icon="@Icons.Material.Filled.Brightness4" Color="Color.Inherit" OnClick="ToggleTheme" />
@@ -22,3 +32,18 @@
         <MudIconButton Icon="@Icons.Material.Filled.Brightness5" Color="Color.Inherit" OnClick="ToggleTheme" />
     }
 </MudAppBar>
+@code {
+    int userId;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+        var userKey = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        User currentUser = _context.Users.Where(w => w.UserKey == userKey).FirstOrDefault();
+
+        if(currentUser != null) userId = currentUser.Id;
+    }
+}

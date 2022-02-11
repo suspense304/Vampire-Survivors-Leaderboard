@@ -60,49 +60,45 @@ else
         </MudItem>
     </MudGrid>
     <br />
-    @*<div class="d-flex flex-row">
-            <div class="p3">
-                <input class="form-control" type="text" placeholder="Filter..." @bind="Filter" @bind:event="oninput">
-            </div>
-        </div>*@
     <br />
-    <MudTable Items="@entries.Where(w => IsVisible(w))" Hover="true" SortLabel="Sort By" FixedHeader="true" Height="600px">
-        <HeaderContent>
-            @*<MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Character.Name)">Character</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Stage.Name)">Stage</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.RunType.Name)">Run Type</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Level)">Level</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Gold)">Gold</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.SurvivedTime)">Survived Time</MudTableSortLabel></MudTh>*@
-            <MudTh>Id</MudTh>
-            <MudTh>User</MudTh>
-            <MudTh>Character</MudTh>
-            <MudTh>Stage</MudTh>
-            @*<MudTh>Run Type</MudTh>*@
-            <MudTh>Kills</MudTh>
-            <MudTh>Level</MudTh>
-            <MudTh>Gold</MudTh>
-            <MudTh>Survived Time</MudTh>
-            <MudTh></MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="Id"><a href=@("/Entry?id=" + @context.Id)>@(entries.IndexOf(@context) + 1)</a></MudTd>
-            <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
-            <MudTd DataLabel="Character">@context.Character.Name</MudTd>
-            <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-            @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
-            <MudTd DataLabel="Kills">@context.Kills</MudTd>
-            <MudTd DataLabel="Level">@context.Level</MudTd>
-            <MudTd DataLabel="Gold">@context.Gold</MudTd>
-            <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
-        </PagerContent>
-    </MudTable>
-
+    <div class="profileContent" style="box-shadow: 0px 2px 3px 1px rgba(0,0,0,0.59);">
+        <MudTable Items="@entries.Where(w => IsVisible(w))" Hover="true" SortLabel="Sort By" FixedHeader="true" Height="600px">
+            <HeaderContent>
+                @*<MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Character.Name)">Character</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Stage.Name)">Stage</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.RunType.Name)">Run Type</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Level)">Level</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Gold)">Gold</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.SurvivedTime)">Survived Time</MudTableSortLabel></MudTh>*@
+                <MudTh>#</MudTh>
+                <MudTh>User</MudTh>
+                <MudTh>Character</MudTh>
+                <MudTh>Stage</MudTh>
+                @*<MudTh>Run Type</MudTh>*@
+                <MudTh>Kills</MudTh>
+                <MudTh>Level</MudTh>
+                <MudTh>Gold</MudTh>
+                <MudTh>Survived Time</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id"><a href=@("/Entry?id=" + @context.Id)>@(entries.IndexOf(@context) + 1)</a></MudTd>
+                <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
+                <MudTd DataLabel="Character">@context.Character.Name</MudTd>
+                <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
+                @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
+                <MudTd DataLabel="Kills">@context.Kills</MudTd>
+                <MudTd DataLabel="Level">@context.Level</MudTd>
+                <MudTd DataLabel="Gold">@context.Gold</MudTd>
+                <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+            </PagerContent>
+        </MudTable>
+    </div>
 }
 
 @code {

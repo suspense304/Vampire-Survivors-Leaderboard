@@ -10,40 +10,6 @@
 @inject vswebsiteContext _context
 
 <style>
-    .profileSection {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        padding: 0;
-        margin: auto;
-    }
-
-    .profileTop {
-        height: 2px;
-        background-color: #594ae2ff;
-        padding: 0;
-        margin: 0;
-    }
-
-    .profileTitle {
-        color: #e8f4ff;
-        padding: 5px 0px 5px 10px;
-        font-size: 1.15em;
-        font-weight: bold;
-        background-color: #272323;
-    }
-
-    .profileContent {
-        color: white;
-        background-color: rgb(33 31 31 / 0.95);
-    }
-
-    .profileFooter {
-        height: 2px;
-        background-color: #100f0f;
-        padding: 0;
-        margin: 0;
-    }
 </style>
 
 @if (Loading)
@@ -54,10 +20,66 @@ else
 {
     @if (user != null)
     {
+        <div class="RankingContainer">
+            @foreach (StageRankings stageRank in rankings)
+            {
+                <div class="RankingCard">
+                    <div style="padding-left: 10px; display: flex; align-items: center; padding-right: 2px;">
+                        @if (stageRank.Ranking == 1)
+                        {
+                            <img src="/images/gold.png" height="16" width="16" /><span style="margin-left: 3px;"> @_helper.GetOrdinalSuffix(@stageRank.Ranking)</span>
+                        }
+                        else if (stageRank.Ranking == 2)
+                        {
+                            <img src="/images/silver.png" height="16" width="16" /><span style="margin-left: 3px;"> @_helper.GetOrdinalSuffix(@stageRank.Ranking)</span>
+                        }
+                        else if (stageRank.Ranking == 3)
+                        {
+                            <img src="/images/bronze.png" height="16" width="16" /><span style="margin-left: 3px;"> @_helper.GetOrdinalSuffix(@stageRank.Ranking)</span>
+                        }
+                        else
+                        {
+                            @if (stageRank.Ranking > 0)
+                            {
+                                <span>@_helper.GetOrdinalSuffix(@stageRank.Ranking)</span>
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                        }
+                    </div>
+                    <div style="padding-left: 10px; text-align: center; flex-grow: 1; background-color:#272323; color: #fff; border: 2px solid #594ae2ff;  ">
+                        <span style="font-weight: bold; font-size: 1.1em;">@stageRank.StageName</span>
+                    </div>
+                </div>
+            }
+        </div>
+        <br />
         <div class="profileSection">
             <div class="profileTop"></div>
             <div class="profileTitle">
-                @user.DisplayName
+                @user.DisplayName -
+                @if (overall.Ranking == 1)
+                {
+                    <img src="/images/gold.png" height="16" width="16" /><span style="margin-left: 3px;"> @_helper.GetOrdinalSuffix(@overall.Ranking)</span>
+                }
+                else if (overall.Ranking == 2)
+                {
+                    <img src="/images/silver.png" height="16" width="16" /><span style="margin-left: 3px;"> @_helper.GetOrdinalSuffix(@overall.Ranking)</span>
+                }
+                else if (overall.Ranking == 3)
+                {
+                    <img src="/images/bronze.png" height="16" width="16" /><span style="margin-left: 3px;"> @_helper.GetOrdinalSuffix(@overall.Ranking)</span>
+                }
+                else if (overall.Ranking == 0)
+                {
+                    <span>N/A</span>
+                }
+                else
+                {
+                    @_helper.GetOrdinalSuffix(@overall.Ranking)
+                }
             </div>
             <div class="profileContent">
                 @if (entries != null)
@@ -72,10 +94,82 @@ else
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd DataLabel="Stage">@context.StageName </MudTd>
-                            <MudTd DataLabel="Kills">@context.Kills <sup>@context.KillsPlace</sup></MudTd>
-                            <MudTd DataLabel="Level">@context.Level <sup>@context.LevelPlace</sup></MudTd>
-                            <MudTd DataLabel="Gold">@context.Gold <sup>@context.GoldPlace</sup></MudTd>
-                            <MudTd DataLabel="Survived Time">@context.TimeSurvived <sup>@context.TimePlace</sup></MudTd>
+                            <MudTd DataLabel="Kills">
+                                @context.Kills
+                                @if (context.KillsPlace == "1st")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/gold.png" height="16" width="16" /><sup> @context.KillsPlace</sup>
+                                            }
+                                            else if (context.KillsPlace == "2nd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/silver.png" height="16" width="16" /><sup> @context.KillsPlace</sup>
+                                            }
+                                            else if (context.KillsPlace == "3rd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/bronze.png" height="16" width="16" /><sup> @context.KillsPlace</sup>
+                                            }
+                                            else
+                                            {
+                                    <sup style="margin-left: 5px;"> @context.KillsPlace</sup>
+                                            }
+                            </MudTd>
+                            <MudTd DataLabel="Level">
+                                @context.Level
+                                @if (context.LevelPlace == "1st")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/gold.png" height="16" width="16" /><sup> @context.LevelPlace</sup>
+                                            }
+                                            else if (context.LevelPlace == "2nd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/silver.png" height="16" width="16" /><sup> @context.LevelPlace</sup>
+                                            }
+                                            else if (context.LevelPlace == "3rd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/bronze.png" height="16" width="16" /><sup> @context.LevelPlace</sup>
+                                            }
+                                            else
+                                            {
+                                    <sup style="margin-left: 5px;"> @context.LevelPlace</sup>
+                                            }
+                            </MudTd>
+                            <MudTd DataLabel="Gold">
+                                @context.Gold
+                                @if (context.GoldPlace == "1st")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/gold.png" height="16" width="16" /><sup> @context.GoldPlace</sup>
+                                            }
+                                            else if (context.GoldPlace == "2nd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/silver.png" height="16" width="16" /><sup> @context.GoldPlace</sup>
+                                            }
+                                            else if (context.GoldPlace == "3rd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/bronze.png" height="16" width="16" /><sup> @context.GoldPlace</sup>
+                                            }
+                                            else
+                                            {
+                                    <sup style="margin-left: 5px;"> @context.GoldPlace</sup>
+                                            }
+                            </MudTd>
+                            <MudTd DataLabel="Survived Time">
+                                @context.TimeSurvived
+                                @if (context.TimePlace == "1st")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px;" src="/images/gold.png" height="16" width="16" /><sup> @context.TimePlace</sup>
+                                            }
+                                            else if (context.TimePlace == "2nd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/silver.png" height="16" width="16" /><sup> @context.TimePlace</sup>
+                                            }
+                                            else if (context.TimePlace == "3rd")
+                                            {
+                                    <img style="margin-left: 5px; margin-right: 5px" src="/images/bronze.png" height="16" width="16" /><sup> @context.TimePlace</sup>
+                                            }
+                                            else
+                                            {
+                                    <sup style="margin-left: 5px;"> @context.TimePlace</sup>
+                                            }
+                            </MudTd>
                         </RowTemplate>
                     </MudTable>
                 }
@@ -96,7 +190,11 @@ else
 
 @code {
     List<ProfileStats> entries = new List<ProfileStats>();
+    public List<StageRankings> rankings = new List<StageRankings>();
     List<Entry> records = new List<Entry>();
+
+    Helpers _helper = new Helpers();
+    StageRankings overall = new StageRankings();
     User user;
 
     bool Loading = true;
@@ -123,9 +221,6 @@ else
     protected override async Task OnInitializedAsync()
     {
         List<Stage> stages = await _context.Stages.ToListAsync();
-
-        Helpers _helper = new Helpers();
-
         int stageCount = stages.Count;
 
         var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
@@ -243,6 +338,14 @@ else
                     }
                 }
             }
+
+            foreach (Stage stage in stages)
+            {
+                rankings.Add(_helper.GetStageRanking(stage.Id, user));
+            };
+
+            overall = _helper.GetTotalRanking(user);
+
             Loading = false;
             StateHasChanged();
         }
@@ -251,7 +354,7 @@ else
 
     private async Task<List<Entry>> RemoveDupes(List<Entry> records)
     {
-        if(records != null && records.Count > 0)
+        if (records != null && records.Count > 0)
         {
             Dictionary<User, int> nameCheck = new Dictionary<User, int>();
             List<Entry> newList = new List<Entry>();
@@ -267,102 +370,5 @@ else
             return newList;
         }
         return new List<Entry>();
-    }
-
-    private async Task SortList(int runTypeId, int stageId)
-    {
-        switch (runTypeId)
-        {
-            case 1:
-                records = records.OrderByDescending(o => o.Level).ToList();
-                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
-                {
-                    Approved = true,
-                    Deleted = false,
-                    Id = s.Key.Id,
-                    UserId = s.Key.UserId,
-                    CharacterId = 1,
-                    DateSubmitted = DateTime.Now,
-                    Character = null,
-                    Gold = s.Key.Gold,
-                    Image = null,
-                    Video = null,
-                    Kills = s.Key.Kills,
-                    Level = s.Max(m => m.Level),
-                    Stage = null,
-                    StageId = stageId,
-                    SurvivedTime = s.Key.SurvivedTime,
-                    User = s.Key.User
-                }).ToList();
-
-                break;
-            case 2:
-                records = records.OrderByDescending(o => o.Kills).ToList();
-                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
-                {
-                    Approved = true,
-                    Deleted = false,
-                    Id = s.Key.Id,
-                    UserId = s.Key.UserId,
-                    CharacterId = 1,
-                    DateSubmitted = DateTime.Now,
-                    Character = null,
-                    Gold = s.Key.Gold,
-                    Image = null,
-                    Video = null,
-                    Kills = s.Max(m => m.Kills),
-                    Level = s.Key.Level,
-                    Stage = null,
-                    StageId = stageId,
-                    SurvivedTime = s.Key.SurvivedTime,
-                    User = s.Key.User
-                }).ToList();
-
-                break;
-            case 3:
-                records = records.OrderByDescending(o => o.SurvivedTime).ToList();
-                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
-                {
-                    Approved = true,
-                    Deleted = false,
-                    Id = s.Key.Id,
-                    UserId = s.Key.UserId,
-                    CharacterId = 1,
-                    DateSubmitted = DateTime.Now,
-                    Character = null,
-                    Gold = s.Key.Gold,
-                    Image = null,
-                    Video = null,
-                    Kills = s.Key.Kills,
-                    Level = s.Key.Level,
-                    Stage = null,
-                    StageId = stageId,
-                    SurvivedTime = s.Max(m => m.SurvivedTime),
-                    User = s.Key.User
-                }).ToList();
-                break;
-            case 4:
-                records = records.OrderByDescending(o => o.Gold).ToList();
-                records = records.GroupBy(g => (g.User, g.UserId, g.Id, g.Gold, g.Level, g.Kills, g.SurvivedTime)).Select(s => new Entry
-                {
-                    Approved = true,
-                    Deleted = false,
-                    Id = s.Key.Id,
-                    UserId = s.Key.UserId,
-                    CharacterId = 1,
-                    DateSubmitted = DateTime.Now,
-                    Character = null,
-                    Gold = s.Max(m => m.Gold),
-                    Image = null,
-                    Video = null,
-                    Kills = s.Key.Kills,
-                    Level = s.Key.Level,
-                    Stage = null,
-                    StageId = stageId,
-                    SurvivedTime = s.Key.SurvivedTime,
-                    User = s.Key.User
-                }).ToList();
-                break;
-        }
     }
 }
