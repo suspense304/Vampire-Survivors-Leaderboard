@@ -58,6 +58,8 @@
 
 
 @code {
+
+	static readonly List<int> pointsAwarded = new List<int> { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
 	bool isAdmin;
 	List<Entry> entries = new List<Entry>();
 	List<CompositeStats> topPlayers = new List<CompositeStats>();
@@ -67,30 +69,15 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-
 		var authState = await authenticationStateTask;
 		var user = authState.User;
 		var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
 		User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
 		if (chkUser != null) isAdmin = chkUser.Admin;
 
-		entries = await _context.Entries
-		.Include(i => i.User)
-		.Include(i => i.Stage)
-		.Include(i => i.Character)
-		.Where(w => w.Approved == true && w.Deleted == false)
-		.OrderByDescending(o => o.DateSubmitted)
-		.Take(10)
-		.ToListAsync();
-
-		var profile = Stopwatch.StartNew();
-
-		CalculatePoints(topPlayers);
-
-		profile.Stop();
-		Debug.WriteLine($"CalculatePoints: {profile.Elapsed}");
-
-		topPlayers = topPlayers.Take(10).ToList();
+		int topN = 10;
+		entries = await GetRecentSubmissions();
+		topPlayers = CalculatePoints(topN);
 	}
 
 	private List<Entry> RemoveDupes(List<Entry> records)
@@ -109,133 +96,131 @@
 		return newList;
 	}
 
+	private async Task<List<Entry>> GetRecentSubmissions()
+	{
+		var profile = Stopwatch.StartNew();
+
+		var entries = await _context.Entries
+			.Include(i => i.User)
+			.Include(i => i.Stage)
+			.Include(i => i.Character)
+			.Where(w => w.Approved == true && w.Deleted == false)
+			.OrderByDescending(o => o.DateSubmitted)
+			.Take(10)
+			.ToListAsync();
+
+		profile.Stop();
+		Debug.WriteLine($"GetRecentSubmissions: {profile.Elapsed}");
+
+		return entries;
+	}
+
 	// TODO: Cache (user, record) stats. Update stats for a user upon submission. Retrieve data from cache and fallback to database.
 	// TODO: Balance fallback against individual vs. all?
 	// TODO: Perhaps, upon app initialization it populates the cache. Trade startup time for better lifetime performance?
-	private List<CompositeStats> CalculatePoints(List<CompositeStats> lst)
+	private List<CompositeStats> CalculatePoints(int topN)
 	{
-		List<int> pointsAwarded = new List<int> { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
-        List<Entry> records = new List<Entry>();
-        Dictionary<User, int> playerPoints = new Dictionary<User, int>();
-        int StageCount = _context.Stages.ToList().Count;
+		var profile = Stopwatch.StartNew();
 
-        int lstCount;
+		List<Entry> records = new List<Entry>();
+		Dictionary<User, int> playerPoints = new Dictionary<User, int>();
+		var stages = _context.Stages.ToList();
+		int stageCount = stages.Count;
 
-        for (int x = 1; x < StageCount + 1; x++)
-        {
-            Stage stage = _context.Stages.Where(w => w.Id == x).FirstOrDefault();
+		for (int stageID = 1; stageID < stageCount + 1; stageID++)
+		{
+			var killRecords = GetRecords(stageID, entry => entry.Kills, topN);
+			var goldRecords = GetRecords(stageID, entry => entry.Gold, topN);
+			var levelRecords = GetRecords(stageID, entry => entry.Level, topN);
+			var timeRecords = GetRecords(stageID, entry => entry.SurvivedTime, topN);
 
-            //Sort List By Kills
-            Debug.WriteLine(stage.Name + " Kills Leaders");
-            records = _context.Entries
-            .Include(i => i.User)
-            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-            .OrderByDescending(o => o.Kills)
-            .ToList();
+			//DebugDumpTopNRecords(stages[stageID-1], killRecords, "Kills", entry => entry.Kills);
+			//DebugDumpTopNRecords(stages[stageID-1], goldRecords, "Gold", entry => entry.Gold);
+			//DebugDumpTopNRecords(stages[stageID-1], levelRecords, "Level", entry => entry.Level);
+			//DebugDumpTopNRecords(stages[stageID-1], timeRecords, "Time", entry => entry.SurvivedTime);
 
-            var killsRecords = _context.Entries
-                            .Include(i => i.User)
-                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-                            .OrderByDescending(o => o.Kills)
-                            .ToList()
-                            .GroupBy(g => (g.User))
-                            .Select(s => s.First()).ToList();
-
-			// TODO: 10 -> a variable for a user-controlled Top N records might be feasible with better performance.
-			// TODO: Not quite sure how that would work for the point-based system, though.
-			lstCount = Math.Min(killsRecords.Count, 10);
-
-			// Preconditions: entries != null, entrie.Count > 0, topN > 0
-			void AddTally(List<Entry> entries, int topN)
-			{
-				for(int idx = 0; idx < topN; idx++)
-				{
-					var user = entries[idx].User;
-					if (user != null)
-					{
-						if (playerPoints.ContainsKey(user))
-						{
-							playerPoints[user] += pointsAwarded[idx];
-						}
-						else
-						{
-							playerPoints.Add(user, pointsAwarded[idx]);
-						}
-
-						//Debug.WriteLine(user.Name + " + " + pointsAwarded[idx].ToString());
-					}
-					else
-					{
-						Debug.WriteLine("How the fuck did this happen?");
-					}
-				}
-			}
-
-			if (killsRecords.Count > 0)
-			{
-				AddTally(killsRecords, lstCount);
-
-				//Sort List By Gold
-				Debug.WriteLine(stage.Name + " Gold Leaders");
-
-				var goldRecords = _context.Entries
-							.Include(i => i.User)
-							.Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-							.OrderByDescending(o => o.Gold)
-							.ToList()
-							.GroupBy(g => (g.User))
-							.Select(s => s.First()).ToList();
-
-
-				lstCount = (goldRecords.Count < 10) ? goldRecords.Count : 10;
-				AddTally(goldRecords, lstCount);
-
-				//Sort List By Level
-				Debug.WriteLine(stage.Name + " Level Leaders");
-				var levelRecords = _context.Entries
-							.Include(i => i.User)
-							.Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-							.OrderByDescending(o => o.Level)
-							.ToList()
-							.GroupBy(g => (g.User))
-							.Select(s => s.First()).ToList();
-
-
-				lstCount = (levelRecords.Count < 10) ? levelRecords.Count : 10;
-				AddTally(levelRecords, lstCount);
-
-				//Sort List By Survived
-				Debug.WriteLine(stage.Name + " Survived Leaders");
-				var timeRecords = _context.Entries
-							.Include(i => i.User)
-							.Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-							.OrderByDescending(o => o.SurvivedTime)
-							.ToList()
-							.GroupBy(g => (g.User))
-							.Select(s => s.First()).ToList();
-
-
-				lstCount = (timeRecords.Count < 10) ? timeRecords.Count : 10;
-				AddTally(timeRecords, lstCount);
-			}
+			AddTally(killRecords, topN, playerPoints);
+			AddTally(goldRecords, topN, playerPoints);
+			AddTally(levelRecords, topN, playerPoints);
+			AddTally(timeRecords, topN, playerPoints);
 		}
 
-        List<KeyValuePair<User, int>> PlayerList = playerPoints.ToList();
-        PlayerList.Sort((firstPair, nextPair) => firstPair.Value.CompareTo(nextPair.Value));
+		var topPlayers = (from playerResult in playerPoints
+			orderby playerResult.Value descending
+			select new CompositeStats
+			{
+				User = playerResult.Key,
+				Points = playerResult.Value
+			})
+			.Take(topN)
+			.ToList();
 
-        foreach (var player in PlayerList)
-        {
-            CompositeStats newPlayer = new CompositeStats
-            {
-                User = player.Key,
-                Points = player.Value
-            };
-            lst.Add(newPlayer);
-        }
-        lst.Reverse();
-        return lst;
+		profile.Stop();
+		Debug.WriteLine($"CalculatePoints: {profile.Elapsed}");
+
+        return topPlayers;
     }
 
+	List<Entry> GetRecords<T>(int stageId, Func<Entry, T> statSelector, int topN)
+	{
+		return _context.Entries.Include(i => i.User)
+			.Where(w => w.StageId == stageId && w.Approved == true && w.Deleted == false)
+			// TODO: Not sure how well this would scale if there were tons of users, but for now it has to be client-side
+			// TODO: loading before performing grouping, etc.
+			.AsEnumerable()
+			.GroupBy(
+				entry => entry.UserId,
+				(userId, group) => group.OrderByDescending(statSelector).First()
+			)
+			.OrderByDescending(statSelector)
+			// TODO: These following sorts are probably needed for accuracy and consistency, but they also add ~5 seconds, which
+			// TODO: eats away the ~3 seconds of gain found through refactoring.
+			// TODO: I've left them off simply because they were not present in the original. I don't want to make the call :).
+			//.ThenByDescending(entry => entry.DateSubmitted)
+			// TODO: Not sure how this behaves with unicode names and the like
+			//.ThenByDescending(entry => entry.User.Name)
+			.Take(topN)
+			.ToList();
+	}
+
+	// Preconditions: entries != null, entry.Count > 0, topN > 0
+	void AddTally(List<Entry> entries, int topN, Dictionary<User, int> playerPoints)
+	{
+		for(int idx = 0; idx < topN; idx++)
+		{
+			var user = entries[idx].User;
+			if (user != null)
+			{
+				if (playerPoints.ContainsKey(user))
+				{
+					playerPoints[user] += pointsAwarded[idx];
+				}
+				else
+				{
+					playerPoints.Add(user, pointsAwarded[idx]);
+				}
+
+				//Debug.WriteLine(user.Name + " + " + pointsAwarded[idx].ToString());
+			}
+			else
+			{
+				Debug.WriteLine("How the fuck did this happen?");
+			}
+		}
+	}
+
+	void DebugDumpTopNRecords<T>(Stage stage, List<Entry> entries, string stat, Func<Entry, T> statSelector)
+	{
+		var offset = entries.Max(entry => entry.User.Name.Length);
+		var formattedRecordEntry = "Record holder: {0,-" + offset + "}\t{1}: {2}";
+
+		Debug.WriteLine($"========{stage.Name}========");
+		foreach(var entry in entries)
+		{
+			Debug.WriteLine(formattedRecordEntry, entry.User.Name, stat, statSelector(entry));
+		}
+		Debug.WriteLine($"===================");
+	}
 }
 
 
