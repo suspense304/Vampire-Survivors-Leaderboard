@@ -131,8 +131,9 @@
                             .GroupBy(g => (g.User))
                             .Select(s => s.First()).ToList();
 
-            lstCount = (killsRecords.Count < 10) ? records.Count : 10;
-
+			// TODO: 10 -> a variable for a user-controlled Top N records might be feasible with better performance.
+			// TODO: Not quite sure how that would work for the point-based system, though.
+			lstCount = Math.Min(killsRecords.Count, 10);
 
             if (killsRecords.Count > 0)
             {
