@@ -58,53 +58,63 @@
 
 
 @code {
-    bool isAdmin;
-    List<Entry> entries = new List<Entry>();
-    List<CompositeStats> topPlayers = new List<CompositeStats>();
+	bool isAdmin;
+	List<Entry> entries = new List<Entry>();
+	List<CompositeStats> topPlayers = new List<CompositeStats>();
 
-    [CascadingParameter]
-    private Task<AuthenticationState> authenticationStateTask { get; set; }
+	[CascadingParameter]
+	private Task<AuthenticationState> authenticationStateTask { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
+	protected override async Task OnInitializedAsync()
+	{
 
-        var authState = await authenticationStateTask;
-        var user = authState.User;
-        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
-        if (chkUser != null) isAdmin = chkUser.Admin;
+		var authState = await authenticationStateTask;
+		var user = authState.User;
+		var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+		User chkUser = _context.Users.Where(w => w.UserKey == userId).FirstOrDefault();
+		if (chkUser != null) isAdmin = chkUser.Admin;
 
-        entries = await _context.Entries
-        .Include(i => i.User)
-        .Include(i => i.Stage)
-        .Include(i => i.Character)
-        .Where(w => w.Approved == true && w.Deleted == false)
-        .OrderByDescending(o => o.DateSubmitted)
-        .Take(10)
-        .ToListAsync();
+		entries = await _context.Entries
+		.Include(i => i.User)
+		.Include(i => i.Stage)
+		.Include(i => i.Character)
+		.Where(w => w.Approved == true && w.Deleted == false)
+		.OrderByDescending(o => o.DateSubmitted)
+		.Take(10)
+		.ToListAsync();
 
-        CalculatePoints(topPlayers);
-        topPlayers = topPlayers.Take(10).ToList();
-    }
+		var profile = Stopwatch.StartNew();
 
-    private List<Entry> RemoveDupes(List<Entry> records)
-    {
-        Dictionary<User, int> nameCheck = new Dictionary<User, int>();
-        List<Entry> newList = new List<Entry>();
-        for (int i = 0; i < records.Count; i++)
-        {
-            if (!nameCheck.ContainsKey(records[i].User))
-            {
-                Entry newEntry = _context.Entries.Where(w => w.Id == records[i].Id).First();
-                newList.Add(newEntry);
-                nameCheck.Add(records[i].User, records[i].Id);
-            }
-        }
-        return newList;
-    }
-    private List<CompositeStats> CalculatePoints(List<CompositeStats> lst)
-    {
-        List<int> pointsAwarded = new List<int> { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
+		CalculatePoints(topPlayers);
+
+		profile.Stop();
+		Debug.WriteLine($"CalculatePoints: {profile.Elapsed}");
+
+		topPlayers = topPlayers.Take(10).ToList();
+	}
+
+	private List<Entry> RemoveDupes(List<Entry> records)
+	{
+		Dictionary<User, int> nameCheck = new Dictionary<User, int>();
+		List<Entry> newList = new List<Entry>();
+		for (int i = 0; i < records.Count; i++)
+		{
+			if (!nameCheck.ContainsKey(records[i].User))
+			{
+				Entry newEntry = _context.Entries.Where(w => w.Id == records[i].Id).First();
+				newList.Add(newEntry);
+				nameCheck.Add(records[i].User, records[i].Id);
+			}
+		}
+		return newList;
+	}
+
+	// TODO: Cache (user, record) stats. Update stats for a user upon submission. Retrieve data from cache and fallback to database.
+	// TODO: Balance fallback against individual vs. all?
+	// TODO: Perhaps, upon app initialization it populates the cache. Trade startup time for better lifetime performance?
+	private List<CompositeStats> CalculatePoints(List<CompositeStats> lst)
+	{
+		List<int> pointsAwarded = new List<int> { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
         List<Entry> records = new List<Entry>();
         Dictionary<User, int> playerPoints = new Dictionary<User, int>();
         int StageCount = _context.Stages.ToList().Count;
@@ -135,130 +145,80 @@
 			// TODO: Not quite sure how that would work for the point-based system, though.
 			lstCount = Math.Min(killsRecords.Count, 10);
 
-            if (killsRecords.Count > 0)
-            {
-                for (int i = 0; i < lstCount; i++)
-                {
-                    if (killsRecords[i].User != null)
-                    {
-                        if (playerPoints.ContainsKey(killsRecords[i].User))
-                        {
-                            playerPoints[killsRecords[i].User] += pointsAwarded[i];
-                            Debug.WriteLine(killsRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                        else
-                        {
-                            playerPoints.Add(killsRecords[i].User, pointsAwarded[i]);
-                            Debug.WriteLine(killsRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                    }
-                    else
-                    {
-                        Debug.WriteLine("How the fuck did this happen?");
-                    }
-                }
+			// Preconditions: entries != null, entrie.Count > 0, topN > 0
+			void AddTally(List<Entry> entries, int topN)
+			{
+				for(int idx = 0; idx < topN; idx++)
+				{
+					var user = entries[idx].User;
+					if (user != null)
+					{
+						if (playerPoints.ContainsKey(user))
+						{
+							playerPoints[user] += pointsAwarded[idx];
+						}
+						else
+						{
+							playerPoints.Add(user, pointsAwarded[idx]);
+						}
 
-                //Sort List By Gold
-                Debug.WriteLine(stage.Name + " Gold Leaders");
+						//Debug.WriteLine(user.Name + " + " + pointsAwarded[idx].ToString());
+					}
+					else
+					{
+						Debug.WriteLine("How the fuck did this happen?");
+					}
+				}
+			}
 
-                var goldRecords = _context.Entries
-                            .Include(i => i.User)
-                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-                            .OrderByDescending(o => o.Gold)
-                            .ToList()
-                            .GroupBy(g => (g.User))
-                            .Select(s => s.First()).ToList();
+			if (killsRecords.Count > 0)
+			{
+				AddTally(killsRecords, lstCount);
 
+				//Sort List By Gold
+				Debug.WriteLine(stage.Name + " Gold Leaders");
 
-                lstCount = (goldRecords.Count < 10) ? goldRecords.Count : 10;
-                for (int i = 0; i < lstCount; i++)
-                {
-                    if (goldRecords[i].User != null)
-                    {
-                        if (playerPoints.ContainsKey(goldRecords[i].User))
-                        {
-                            playerPoints[goldRecords[i].User] += pointsAwarded[i];
-                            Debug.WriteLine(goldRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                        else
-                        {
-                            playerPoints.Add(goldRecords[i].User, pointsAwarded[i]);
-                            Debug.WriteLine(goldRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                    }
-                    else
-                    {
-                        Debug.WriteLine("How the fuck did this happen?");
-                    }
-                }
-
-                //Sort List By Level
-                Debug.WriteLine(stage.Name + " Level Leaders");
-                var levelRecords = _context.Entries
-                            .Include(i => i.User)
-                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-                            .OrderByDescending(o => o.Level)
-                            .ToList()
-                            .GroupBy(g => (g.User))
-                            .Select(s => s.First()).ToList();
+				var goldRecords = _context.Entries
+							.Include(i => i.User)
+							.Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
+							.OrderByDescending(o => o.Gold)
+							.ToList()
+							.GroupBy(g => (g.User))
+							.Select(s => s.First()).ToList();
 
 
-                lstCount = (levelRecords.Count < 10) ? levelRecords.Count : 10;
-                for (int i = 0; i < lstCount; i++)
-                {
-                    if (levelRecords[i].User != null)
-                    {
-                        if (playerPoints.ContainsKey(levelRecords[i].User))
-                        {
-                            playerPoints[levelRecords[i].User] += pointsAwarded[i];
-                            Debug.WriteLine(levelRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                        else
-                        {
-                            playerPoints.Add(levelRecords[i].User, pointsAwarded[i]);
-                            Debug.WriteLine(levelRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                    }
-                    else
-                    {
-                        Debug.WriteLine("How the fuck did this happen?");
-                    }
-                }
+				lstCount = (goldRecords.Count < 10) ? goldRecords.Count : 10;
+				AddTally(goldRecords, lstCount);
 
-                //Sort List By Survived
-                Debug.WriteLine(stage.Name + " Survived Leaders");
-                var timeRecords = _context.Entries
-                            .Include(i => i.User)
-                            .Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
-                            .OrderByDescending(o => o.SurvivedTime)
-                            .ToList()
-                            .GroupBy(g => (g.User))
-                            .Select(s => s.First()).ToList();
+				//Sort List By Level
+				Debug.WriteLine(stage.Name + " Level Leaders");
+				var levelRecords = _context.Entries
+							.Include(i => i.User)
+							.Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
+							.OrderByDescending(o => o.Level)
+							.ToList()
+							.GroupBy(g => (g.User))
+							.Select(s => s.First()).ToList();
 
 
-                lstCount = (timeRecords.Count < 10) ? timeRecords.Count : 10;
-                for (int i = 0; i < lstCount; i++)
-                {
-                    if (timeRecords[i].User != null)
-                    {
-                        if (playerPoints.ContainsKey(timeRecords[i].User))
-                        {
-                            playerPoints[timeRecords[i].User] += pointsAwarded[i];
-                            Debug.WriteLine(timeRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                        else
-                        {
-                            playerPoints.Add(timeRecords[i].User, pointsAwarded[i]);
-                            Debug.WriteLine(timeRecords[i].User.Name + " + " + pointsAwarded[i].ToString());
-                        }
-                    }
-                    else
-                    {
-                        Debug.WriteLine("How the fuck did this happen?");
-                    }
-                }
-            }
-        }
+				lstCount = (levelRecords.Count < 10) ? levelRecords.Count : 10;
+				AddTally(levelRecords, lstCount);
+
+				//Sort List By Survived
+				Debug.WriteLine(stage.Name + " Survived Leaders");
+				var timeRecords = _context.Entries
+							.Include(i => i.User)
+							.Where(w => w.StageId == x && w.Approved == true && w.Deleted == false)
+							.OrderByDescending(o => o.SurvivedTime)
+							.ToList()
+							.GroupBy(g => (g.User))
+							.Select(s => s.First()).ToList();
+
+
+				lstCount = (timeRecords.Count < 10) ? timeRecords.Count : 10;
+				AddTally(timeRecords, lstCount);
+			}
+		}
 
         List<KeyValuePair<User, int>> PlayerList = playerPoints.ToList();
         PlayerList.Sort((firstPair, nextPair) => firstPair.Value.CompareTo(nextPair.Value));
