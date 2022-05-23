@@ -178,7 +178,7 @@
 			// TODO: I've left them off simply because they were not present in the original. I don't want to make the call :).
 			//.ThenByDescending(entry => entry.DateSubmitted)
 			// TODO: Not sure how this behaves with unicode names and the like
-			//.ThenByDescending(entry => entry.User.Name)
+			//.ThenBy(entry => entry.User.Name)
 			.Take(topN)
 			.ToList();
 	}
