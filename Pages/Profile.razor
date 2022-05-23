@@ -5,7 +5,9 @@
 @using Microsoft.AspNetCore.WebUtilities;
 @using System.Diagnostics;
 @using Classes;
+@using Data
 
+@inject PageTitle _pageTitle
 @inject NavigationManager NavManager
 @inject vswebsiteContext _context
 
@@ -20,7 +22,7 @@ else
 {
     @if (user != null)
     {
-        <div class="RankingContainer">
+        <div class="RankingContainer" style="flex-wrap:wrap;">
             @foreach (StageRankings stageRank in rankings)
             {
                 <div class="RankingCard">
@@ -220,6 +222,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _pageTitle.SetTitle("Profile");
         List<Stage> stages = await _context.Stages.ToListAsync();
         int stageCount = stages.Count;
 
@@ -244,13 +247,13 @@ else
 
                         // Get Gold Value
                         var goldRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
                             .OrderByDescending(o => o.Gold)
                             .ToList()
                             .GroupBy(g => (g.UserId))
                             .Select(s => s.First()).ToList();
 
-                        if (entryList != null)
+                        if (entryList != null && entryList.Count > 0)
                         {
                             stats.Gold = entryList.Max(m => m.Gold);
                             stats.GoldPlace = _helper.GetOrdinalSuffix((goldRecords.FindIndex(i => i.UserId == user.Id)) + 1);
@@ -264,18 +267,18 @@ else
 
                         // Get Kill Value
                         entryList = await _context.Entries.Where(w => w.StageId == i &&
-                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
+                        w.UserId == user.Id && w.Approved == true && w.Deleted == false && w.Limitless == false)
                         .OrderByDescending(o => o.Kills)
                         .ToListAsync();
 
                         var killsRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
                             .OrderByDescending(o => o.Kills)
                             .ToList()
                             .GroupBy(g => (g.UserId))
                             .Select(s => s.First()).ToList();
 
-                        if (entryList != null)
+                        if (entryList != null && entryList.Count > 0)
                         {
                             stats.Kills = entryList.Max(m => m.Kills);
                             stats.KillsPlace = _helper.GetOrdinalSuffix((killsRecords.FindIndex(i => i.UserId == user.Id)) + 1);
@@ -288,18 +291,18 @@ else
 
                         // Get Level Value
                         entryList = await _context.Entries.Where(w => w.StageId == i &&
-                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
+                        w.UserId == user.Id && w.Approved == true && w.Deleted == false && w.Limitless == false)
                         .OrderByDescending(o => o.Level)
                         .ToListAsync();
 
                         var levelRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
                             .OrderByDescending(o => o.Level)
                             .ToList()
                             .GroupBy(g => (g.UserId))
                             .Select(s => s.First()).ToList();
 
-                        if (entryList != null)
+                        if (entryList != null && entryList.Count > 0)
                         {
                             stats.Level = entryList.Max(m => m.Level);
                             stats.LevelPlace = _helper.GetOrdinalSuffix((levelRecords.FindIndex(i => i.UserId == user.Id)) + 1);
@@ -312,18 +315,18 @@ else
 
                         // Get Time Value
                         entryList = await _context.Entries.Where(w => w.StageId == i &&
-                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
+                        w.UserId == user.Id && w.Approved == true && w.Deleted == false && w.Limitless == false)
                         .OrderByDescending(o => o.SurvivedTime)
                         .ToListAsync();
 
                         var timeRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false)
+                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
                             .OrderByDescending(o => o.SurvivedTime)
                             .ToList()
                             .GroupBy(g => (g.UserId))
                             .Select(s => s.First()).ToList();
 
-                        if (entryList != null)
+                        if (entryList != null && entryList.Count > 0)
                         {
                             stats.TimeSurvived = Convert.ToDouble(entryList.Max(m => m.SurvivedTime));
                             stats.TimePlace = _helper.GetOrdinalSuffix((timeRecords.FindIndex(i => i.UserId == user.Id)) + 1);

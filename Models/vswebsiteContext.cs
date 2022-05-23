@@ -19,9 +19,11 @@ namespace Vampire_Survivors_Leaderboard.Models
 
         public virtual DbSet<Character> Characters { get; set; }
         public virtual DbSet<Entry> Entries { get; set; }
+        public virtual DbSet<Leaderboard> Leaderboards { get; set; }
         public virtual DbSet<RunType> RunTypes { get; set; }
         public virtual DbSet<Stage> Stages { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Version> Versions { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -64,6 +66,37 @@ namespace Vampire_Survivors_Leaderboard.Models
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Entries_Users");
+
+                entity.HasOne(d => d.VersionNavigation)
+                    .WithMany(p => p.Entries)
+                    .HasForeignKey(d => d.Version)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Entries_Version");
+            });
+
+            modelBuilder.Entity<Leaderboard>(entity =>
+            {
+                entity.ToTable("Leaderboard");
+
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+                entity.HasOne(d => d.IdNavigation)
+                    .WithOne(p => p.LeaderboardIdNavigation)
+                    .HasForeignKey<Leaderboard>(d => d.Id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Leaderboard_Users");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.LeaderboardUsers)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Leaderboard_Leaderboard");
+
+                entity.HasOne(d => d.VersionNavigation)
+                    .WithMany(p => p.Leaderboards)
+                    .HasForeignKey(d => d.Version)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Leaderboard_Version");
             });
 
             modelBuilder.Entity<RunType>(entity =>
@@ -87,6 +120,13 @@ namespace Vampire_Survivors_Leaderboard.Models
                 entity.Property(e => e.Name).IsRequired();
 
                 entity.Property(e => e.UserKey).IsRequired();
+            });
+
+            modelBuilder.Entity<Version>(entity =>
+            {
+                entity.ToTable("Version");
+
+                entity.Property(e => e.Name).IsRequired();
             });
 
             OnModelCreatingPartial(modelBuilder);

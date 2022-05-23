@@ -3,7 +3,9 @@
 @using System.Security.Claims
 @using Microsoft.Extensions.Configuration
 @using System.IO
+@using Data
 
+@inject PageTitle _pageTitle
 @inject vswebsiteContext _context
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
@@ -13,106 +15,124 @@
 
 @if (loggedIn)
 {
-    <h3>Submit Run</h3>
+<EditForm Model="@entry" OnValidSubmit="@SubmitEntry">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <h3>Run Info</h3>
+    <MudGrid Style="width: 600px;">
+        <MudItem xs="12" sm="4" md="4">
+            <MudItem xs="12">
+                <MudSelect @bind-Value="entry.StageId" Label="Stage" FullWidth="false" Style="width: 100px;">
+                    @if (entry.Stage != null)
+                        {
+                        <MudSelectItem Value="@entry.StageId">@entry.Stage.Name</MudSelectItem>
+                        }
+                        else
+                        {
+                        <MudSelectItem Value="0">None</MudSelectItem>
+                        }
+                    @foreach (var stage in stages)
+                        {
+                        <MudSelectItem Value="@stage.Id">@stage.Name</MudSelectItem>
+                        }
+                </MudSelect>
+            </MudItem>
+        </MudItem>
+        <MudItem xs="12" sm="4" md="4">
+            <MudItem xs="12">
+                <MudSelect @bind-Value="entry.CharacterId" Label="Character" FullWidth="false">
+                    @if (entry.Character != null)
+                        {
+                        <MudSelectItem Value="@entry.CharacterId">@entry.Character.Name</MudSelectItem>
+                        }
+                        else
+                        {
+                        <MudSelectItem Value="0">None</MudSelectItem>
+                        }
+                    @foreach (var character in characters)
+                        {
+                        <MudSelectItem Value="@character.Id">@character.Name</MudSelectItem>
+                        }
+                </MudSelect>
+            </MudItem>
+        </MudItem>
+        <MudItem xs="12" sm="4" md="4">
+            <MudItem xs="12">
+                <MudSelect @bind-Value="entry.Version" Label="Version" FullWidth="false">
+                    @if (entry.VersionNavigation != null)
+                        {
+                        <MudSelectItem Value="@entry.Version">@entry.VersionNavigation.Name</MudSelectItem>
+                        }
+                        else
+                        {
+                        <MudSelectItem Value="0">None</MudSelectItem>
+                        }
+                    @foreach (var version in versions)
+                        {
+                        <MudSelectItem Value="@version.Id">@version.Name</MudSelectItem>
+                        }
+                </MudSelect>
+            </MudItem>
+        </MudItem>
+    </MudGrid>
+    <br />
+    <h3>Stats</h3>
+    <br />
+    <hr />
+    <br />
+    <MudGrid Style="width: 800px;">
+        <MudItem xs="12" sm="6" md="3">
+            <MudTextField T="Int32" Label="Kills" Variant="Variant.Outlined" @bind-Value="@entry.Kills" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudTextField T="Int32" Label="Gold" Variant="Variant.Outlined" @bind-Value="@entry.Gold" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudTextField T="Int32" Label="Level" Variant="Variant.Outlined" @bind-Value="@entry.Level" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudTextField T="Decimal" Label="Survived" Variant="Variant.Outlined" @bind-Value="@entry.SurvivedTime" />
+        </MudItem>
+    </MudGrid>
+    <label style="padding: 5px; margin-right: 10px;">Limitless: </label>
+    <span class="InputContainer">
+        <input class="DropDown" type="checkbox" @onchange="LimitChanged" checked="@isLimitless">
+    </span>
+    <br />
+    <h3>Proof</h3>
+    <br />
+    <hr />
+    <br />
+    <MudGrid Style="width: 800px;">
+        <MudItem xs="12" sm="12" md="12">
+            <MudTextField T="String" Label="Video" Variant="Variant.Outlined" @bind-Value="@entry.Video" Style="width: 500px;" />
+        </MudItem>
+    </MudGrid>
     <br />
     <br />
 
-    <EditForm Model="@entry" OnValidSubmit="@SubmitEntry">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-        <h3>Run Info</h3>
-        <MudGrid Style="width: 600px;">
-            <MudItem xs="12" sm="4" md="4">
-                <MudItem xs="12">
-                    <MudSelect @bind-Value="entry.StageId" Label="Stage" FullWidth="false" Style="width: 100px;">
-                        @if (entry.Stage != null)
-                            {
-                            <MudSelectItem Value="@entry.StageId">@entry.Stage.Name</MudSelectItem>
-                            }
-                            else
-                            {
-                            <MudSelectItem Value="0">None</MudSelectItem>
-                            }
-                        @foreach (var stage in stages)
-                            {
-                            <MudSelectItem Value="@stage.Id">@stage.Name</MudSelectItem>
-                            }
-                    </MudSelect>
-                </MudItem>
-            </MudItem>
-            <MudItem xs="12" sm="4" md="4">
-                <MudItem xs="12">
-                    <MudSelect @bind-Value="entry.CharacterId" Label="Character" FullWidth="false">
-                        @if (entry.Character != null)
-                            {
-                            <MudSelectItem Value="@entry.CharacterId">@entry.Character.Name</MudSelectItem>
-                            }
-                            else
-                            {
-                            <MudSelectItem Value="0">None</MudSelectItem>
-                            }
-                        @foreach (var character in characters)
-                            {
-                            <MudSelectItem Value="@character.Id">@character.Name</MudSelectItem>
-                            }
-                    </MudSelect>
-                </MudItem>
-            </MudItem>
-        </MudGrid>
-        <br />
-        <h3>Stats</h3>
-        <br />
-        <hr />
-        <br />
-        <MudGrid Style="width: 800px;">
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField T="Int32" Label="Kills" Variant="Variant.Outlined" @bind-Value="@entry.Kills" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField T="Int32" Label="Gold" Variant="Variant.Outlined" @bind-Value="@entry.Gold" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField T="Int32" Label="Level" Variant="Variant.Outlined" @bind-Value="@entry.Level" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField T="Decimal" Label="Survived" Variant="Variant.Outlined" @bind-Value="@entry.SurvivedTime" />
-            </MudItem>
-        </MudGrid>
-        <br />
-        <h3>Proof</h3>
-        <br />
-        <hr />
-        <br />
-        <MudGrid Style="width: 800px;">
-            <MudItem xs="12" sm="12" md="12">
-                <MudTextField T="String" Label="Video" Variant="Variant.Outlined" @bind-Value="@entry.Video" Style="width: 500px;" />
-            </MudItem>
-        </MudGrid>
-        <br />
-        <br />
+    <MudGrid Style="width: 800px;">
+        @if (ImageUrl != "")
+        {
+            <img src="@ImageUrl" />
+            <br /><br>
+        }
 
-        <MudGrid Style="width: 800px;">
-            @if (ImageUrl != "")
-            {
-                <img src="@ImageUrl" />
-                <br /><br>
-            }
-
-            @if (!Uploaded)
-            {
-                <div class="dropArea @dropClass">
-                    Drag and Drop Screenshot or click to select file.
-                    <InputFile disabled="@Uploading"
-                               OnChange="OnInputFileChange"
-                               @ondragenter="HandleDragEnter"
-                               @ondragleave="HandleDragLeave" />
-                </div>
-            }
-            <MudItem Style="margin: auto;">
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SubmitEntry">Submit</MudButton>
-            </MudItem>
-        </MudGrid>
-    </EditForm>
+        @if (!Uploaded)
+        {
+            <div class="dropArea @dropClass">
+                Drag and Drop Screenshot or click to select file.
+                <InputFile disabled="@Uploading"
+                           OnChange="OnInputFileChange"
+                           @ondragenter="HandleDragEnter"
+                           @ondragleave="HandleDragLeave" />
+            </div>
+        }
+        <MudItem Style="margin: auto;">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="SubmitEntry">Submit</MudButton>
+        </MudItem>
+    </MudGrid>
+</EditForm>
 }
 else
 {
@@ -123,15 +143,18 @@ else
     bool loggedIn;
     bool Uploaded = false;
     bool Uploading = false;
+    bool isLimitless = false;
 
     string dropClass = string.Empty;
 
     string ImageFileName = "";
     string ImageUrl = "";
 
+
     public List<Character> characters = new List<Character>();
     public List<Stage> stages = new List<Stage>();
     public List<RunType> runTypes = new List<RunType>();
+    public List<Models.Version> versions = new List<Models.Version>();
 
     public Entry entry = new Entry();
 
@@ -140,6 +163,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _pageTitle.SetTitle("Approve Run");
         var authState = await authenticationStateTask;
         var user = authState.User;
         loggedIn = user.Identity.IsAuthenticated;
@@ -149,6 +173,12 @@ else
         characters = await _context.Characters.OrderBy(o => o.Name).ToListAsync();
         stages = await _context.Stages.ToListAsync();
         runTypes = await _context.RunTypes.ToListAsync();
+        versions = await _context.Versions.Where(w => w.Active == true).ToListAsync();
+    }
+
+    private void LimitChanged(ChangeEventArgs e)
+    {
+        isLimitless = Convert.ToBoolean(e.Value);
     }
 
     private async Task SubmitEntry()
@@ -176,6 +206,7 @@ else
             entry.Approved = false;
             entry.UserId = chkUser.Id;
             entry.Image = ImageFileName;
+            entry.Limitless = isLimitless;
             _context.Entries.Add(entry);
             await _context.SaveChangesAsync();
             Snackbar.Add("Entry has been submitted.", Severity.Success);
@@ -204,10 +235,10 @@ else
             await InvokeAsync(StateHasChanged);
 
             var format = "image/png";
-            var resizedImageFile = await args.File.RequestImageFileAsync(format, 1280, 720);
+            var resizedImageFile = await args.File.RequestImageFileAsync(format, 960, 540);
 
             var buffer = new byte[resizedImageFile.Size];
-            await resizedImageFile.OpenReadStream().ReadAsync(buffer);
+            await resizedImageFile.OpenReadStream(1000000).ReadAsync(buffer);
 
             string justFileName = Path.GetFileNameWithoutExtension(args.File.Name);
             string newFileNameWithoutPath = $"{justFileName}-{DateTime.Now.Ticks.ToString()}.png";

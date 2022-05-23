@@ -4,24 +4,35 @@
 @using Models
 @using Microsoft.EntityFrameworkCore;
 @using System.Diagnostics;
+@using Data
 
+@inject PageTitle _pageTitle
 @inject vswebsiteContext _context
 
-<h3>Leaderboard</h3>
-@if (entries == null || Loading)
+
+<br />
+@if (Loaded)
 {
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <br />
+    <div style="display: flex; align-content: end; width: 100%;">
+        <div style="margin-left: auto;">
+            <label class="formLabel" for="location" style="width: 100px; padding: 5px; margin-right: 10px;">Version: </label>
+            <span class="InputContainer">
+                <select class="DropDown" @onchange="VersionChanged" style="width: 100px; padding: 5px;" disabled="@Loading">
+                    <option value="0">ALL</option>
+                    @foreach (var version in versions)
+                    {
+                        <option value="@version.Id">@version.Name</option>
+                    }
+                </select>
+            </span>
+        </div>
+    </div>
     <MudGrid Style="width: 800px;">
         <MudItem xs="12" sm="4" md="4">
-            <MudItem xs="12" Style="padding: 10px; box-sizing: border-box;">
+            <MudItem xs="12" Style="padding: 10px; box-sizing: border-box; margin-right: 5px;">
                 <label class="formLabel" for="location" style="width: 100px; padding: 5px; margin-right: 10px;">Stage: </label>
                 <span class="InputContainer">
-                    <select class="DropDown" @onchange="StageChanged" style="width: 250px; padding: 10px;">
-                        @*<option value="0">ALL</option>*@
+                    <select class="DropDown" @onchange="StageChanged" style="width: 250px; padding: 10px;" disabled="@Loading">
                         @foreach (var stage in stages)
                         {
                             <option value="@stage.Id">@stage.Name</option>
@@ -31,10 +42,10 @@ else
             </MudItem>
         </MudItem>
         <MudItem xs="12" sm="4" md="4">
-            <MudItem xs="12" Style="padding: 10px; box-sizing: border-box;">
+            <MudItem xs="12" Style="padding: 10px; box-sizing: border-box; margin-right: 5px;">
                 <label class="formLabel" for="location" style="width: 100px; padding: 5px; margin-right: 10px;">Character: </label>
                 <span class="InputContainer">
-                    <select class="DropDown" @onchange="CharacterChanged" style="width: 250px; padding: 10px;">
+                    <select class="DropDown" @onchange="CharacterChanged" style="width: 250px; padding: 10px;" disabled="@Loading">
                         <option value="0">ALL</option>
                         @foreach (var character in characters)
                         {
@@ -45,10 +56,10 @@ else
             </MudItem>
         </MudItem>
         <MudItem xs="12" sm="4" md="4">
-            <MudItem xs="12" Style="padding: 10px; box-sizing: border-box;">
+            <MudItem xs="12" Style="padding: 10px; box-sizing: border-box; margin-right: 5px;">
                 <label class="formLabel" for="location" style="width: 100px; padding: 5px; margin-right: 10px;">Run Type: </label>
                 <span class="InputContainer">
-                    <select class="DropDown" @onchange="RunTypeChanged" style="width: 250px; padding: 10px;">
+                    <select class="DropDown" @onchange="RunTypeChanged" style="width: 250px; padding: 10px;" disabled="@Loading">
                         @*<option value="0">ALL</option>*@
                         @foreach (var runType in runTypes)
                         {
@@ -59,19 +70,22 @@ else
             </MudItem>
         </MudItem>
     </MudGrid>
-    <br />
-    <br />
+    <label style="padding: 5px; margin-right: 10px;">Limitless: </label>
+    <span class="InputContainer">
+        <input class="DropDown" type="checkbox" @onchange="LimitChanged" checked="@isLimitless" disabled="@Loading">
+    </span>
+}
+
+<br />
+<br />
+@if (!Loading)
+{
     <div class="profileContent" style="box-shadow: 0px 2px 3px 1px rgba(0,0,0,0.59);">
-        <MudTable Items="@entries.Where(w => IsVisible(w))" Hover="true" SortLabel="Sort By" FixedHeader="true" Height="600px">
+        <MudTable Items="@entries.Where(w => IsVisible(w))" Hover="true" SortLabel="Sort By" FixedHeader="true" Height="600px" Striped="true" Elevation="2">
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+            </PagerContent>
             <HeaderContent>
-                @*<MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Id)">Id</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Character.Name)">Character</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Stage.Name)">Stage</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.RunType.Name)">Run Type</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Kills)">Kills</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Level)">Level</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.Gold)">Gold</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<Entry, object>(x=>x.SurvivedTime)">Survived Time</MudTableSortLabel></MudTh>*@
                 <MudTh>#</MudTh>
                 <MudTh>User</MudTh>
                 <MudTh>Character</MudTh>
@@ -88,18 +102,20 @@ else
                 <MudTd DataLabel="User"><a href=@("/Profile?id=" + @context.User.Id)>@context.User.DisplayName</a></MudTd>
                 <MudTd DataLabel="Character">@context.Character.Name</MudTd>
                 <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-                @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
                 <MudTd DataLabel="Kills">@context.Kills</MudTd>
                 <MudTd DataLabel="Level">@context.Level</MudTd>
                 <MudTd DataLabel="Gold">@context.Gold</MudTd>
                 <MudTd DataLabel="Survived Time">@context.SurvivedTime</MudTd>
             </RowTemplate>
-            <PagerContent>
-                <MudTablePager PageSizeOptions="new int[]{50, 100}" />
-            </PagerContent>
         </MudTable>
     </div>
 }
+else
+{
+    <p><em>Loading...</em></p>
+}
+
+
 
 @code {
     private List<Entry> entries = new List<Entry>();
@@ -107,16 +123,20 @@ else
     bool adminUser;
     bool ActiveOnly { get; set; } = false;
     bool Loading = true;
+    bool Loaded = false;
+    bool isLimitless = false;
 
     public string Filter { get; set; }
 
     public List<Character> characters = new List<Character>();
     public List<Stage> stages = new List<Stage>();
     public List<RunType> runTypes = new List<RunType>();
+    public List<Models.Version> versions = new List<Models.Version>();
 
     int stageId = 1;
     int characterId;
     int runTypeId = 1;
+    int versionId = 0;
 
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
@@ -139,15 +159,30 @@ else
         RefreshList();
     }
 
+    private void LimitChanged(ChangeEventArgs e)
+    {
+        isLimitless = Convert.ToBoolean(e.Value);
+        RefreshList();
+    }
+
+    private void VersionChanged(ChangeEventArgs e)
+    {
+        versionId = Convert.ToInt32(e.Value);
+        RefreshList();
+    }
+
     private async void RefreshList()
     {
+        Loading = true;
         entries = await _context.Entries
             .Include(i => i.User)
             .Include(i => i.Stage)
             .Include(i => i.Character)
             .Where(w => (characterId == 0 || w.CharacterId == characterId)
             && (stageId == 0 || w.StageId == stageId)
+            && (versionId == 0 || w.Version == versionId)
             && w.Approved == true
+            && w.Limitless == isLimitless
             && w.Deleted == false).ToListAsync();
         await SortList();
         StateHasChanged();
@@ -180,19 +215,19 @@ else
                 nameCheck.Add(records[i].User, records[i].Id);
             }
         }
-        Loading = false;
         return newList;
     }
 
     protected override async Task OnInitializedAsync()
     {
-
+        _pageTitle.SetTitle("Leaderboards");
         var authState = await authenticationStateTask;
         var user = authState.User;
 
         characters = await _context.Characters.OrderBy(o => o.Name).ToListAsync();
         stages = await _context.Stages.ToListAsync();
         runTypes = await _context.RunTypes.ToListAsync();
+        versions = await _context.Versions.Where(w => w.Active == true).ToListAsync();
 
         entries = await _context.Entries
             .Include(i => i.User)
@@ -200,10 +235,12 @@ else
             .Include(i => i.Character)
             .Where(w => (characterId == 0 || w.CharacterId == characterId)
             && (stageId == 0 || w.StageId == stageId)
+            && (versionId == 0 || w.Version == versionId)
             && w.Approved == true
+            && w.Limitless == isLimitless
             && w.Deleted == false).ToListAsync();
         await SortList();
-
+        Loaded = true;
     }
 
     private async Task SortList()
@@ -234,6 +271,7 @@ else
                         User = s.Key.User,
                     }).ToList();
                 entries = await RemoveDupes(entries);
+                Loading = false;
                 break;
             case 2:
                 entries = entries.OrderByDescending(o => o.Kills).ToList();
@@ -258,6 +296,7 @@ else
                         User = s.Key.User
                     }).ToList();
                 entries = await RemoveDupes(entries);
+                Loading = false;
                 break;
             case 3:
                 entries = entries.OrderByDescending(o => o.SurvivedTime).ToList();
@@ -282,6 +321,7 @@ else
                         User = s.Key.User,
                     }).ToList();
                 entries = await RemoveDupes(entries);
+                Loading = false;
                 break;
             case 4:
                 entries = entries.OrderByDescending(o => o.Gold).ToList();
@@ -306,7 +346,9 @@ else
                         User = s.Key.User,
                     }).ToList();
                 entries = await RemoveDupes(entries);
+                Loading = false;
                 break;
         }
+        Loading = false;
     }
 }

@@ -16,13 +16,16 @@ namespace Vampire_Survivors_Leaderboard.Models
         public int Kills { get; set; }
         public decimal SurvivedTime { get; set; }
         public int Gold { get; set; }
+        public int Version { get; set; }
         public string Image { get; set; }
         public string Video { get; set; }
         public bool Approved { get; set; }
         public bool Deleted { get; set; }
+        public bool Limitless { get; set; }
 
         public virtual Character Character { get; set; }
         public virtual Stage Stage { get; set; }
         public virtual User User { get; set; }
+        public virtual Version VersionNavigation { get; set; }
     }
 }

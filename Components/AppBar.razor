@@ -1,13 +1,16 @@
 ﻿@using Models
 @using Microsoft.EntityFrameworkCore;
 @using System.Security.Claims
+@using Data
+
 
 @inject vswebsiteContext _context
+@inject PageTitle _pageTitle 
 
 <MudAppBar Elevation="3" Color="Color.Dark">
     <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
                    OnClick="async () => await OnSidebarToggled.InvokeAsync()" />
-    <h2 style="color: #fff;">Vampire Survivor Leaderboards</h2>
+    <h2 style="color: #fff;">@_pageTitle.Title</h2>
     <MudAppBarSpacer />
     <AuthorizeView>
         <Authorized>

@@ -1,0 +1,42 @@
+﻿@page "/Guidelines"
+@using Microsoft.AspNetCore.Components
+
+@inject NavigationManager _nav
+
+<MudCard Outlined="true">
+    <MudCardContent Style="padding: 20px;"> 
+        <MudText>Leadboard Guidelines</MudText>
+        <MudText Typo="Typo.body2">
+            <ol>
+                <li>Be respectful and use an appropriate name.</li>
+                <li>Follow proper procedures when filling out runs. (An erroneous video link or screenshot is likely to get your submissions rejected)
+                    <ol>
+                        <li>Screenshots must be under 100kb</li>
+                        <li>Videos should be submitted by copying the address URL and pasting them in the correct field. Any other link will not work and your submission will be rejected</li>
+                    </ol>
+                </li>
+                <li>Any WR run in any category (character choice does not matter) must be recorded. (With the exception of cool-down periods after a new map is added).</li>
+                <li>
+                    Any WR run must have no save point alterations.
+                    <ol>
+                        <li>Rule 4 will be enforced by leaderboard-helper discretion. Every player should work towards getting ALL achievements. If a player is found to be purposefully not pursuing ALL achievements their records will be removed from the leaderboard.</li>
+                    </ol>
+                </li>
+                <li>
+                    No modding or non-vanilla enhancements are allowed. (This can include anything from tick rate manipulation to file alterations done outside of the game).
+                    <ol>
+                        <li>Manipulating the speed at which your game runs is forbidden.</li>
+                        <li>Missingno, and infinite toastie runs are only allowed on limitless</li>
+                        <li>The leveling glitch is only allowed on limitless & infinite survival through porta.</li>
+                    </ol>
+                </li>
+                <li>Any cheating found will result in immediate removal of personnel from the leaderboards.</li>
+                <li>Any runs done on the beta branch will not be accepted until the official release.</li>
+                <li>For longest survived runs, to be eligible for the #1 spot, your game must not lag excessively.</li>
+            </ol>
+        </MudText>
+    </MudCardContent>
+    <MudCardActions>
+        <a href="https://youtu.be/wPnq0x5KvK4" target="_blank">Learn More</a>
+    </MudCardActions>
+</MudCard>

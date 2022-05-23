@@ -3,13 +3,13 @@
 @using Models
 @using Microsoft.EntityFrameworkCore;
 @using System.Security.Claims
+@using Data
 
+@inject PageTitle _pageTitle
 @inject vswebsiteContext _context
 
 @if (isAdmin)
 {
-    <h3>Approve</h3>
-
     <MudTable Items="@entries" Hover="true" FixedHeader="true" Height="600px">
         <HeaderContent>
             <MudTh></MudTh>
@@ -24,7 +24,6 @@
             <MudTd DataLabel="User">@context.User.DisplayName</MudTd>
             <MudTd DataLabel="Character">@context.Character.Name</MudTd>
             <MudTd DataLabel="Stage">@context.Stage.Name</MudTd>
-            @*<MudTd DataLabel="Run Type">@context.RunType.Name</MudTd>*@
             <MudTd DataLabel=""><a href=@("/Entry?id=" + @context.Id)>View</a></MudTd>
         </RowTemplate>
     </MudTable>
@@ -44,7 +43,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-
+        _pageTitle.SetTitle("Approve Run");
         var authState = await authenticationStateTask;
         var user = authState.User;
         var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -55,7 +54,6 @@ else
         .Include(i => i.User)
         .Include(i => i.Stage)
         .Include(i => i.Character)
-        //.Include(i => i.RunType)
         .Where(w => w.Approved == false && w.Deleted == false).ToListAsync();
     }
 }

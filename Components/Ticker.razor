@@ -41,19 +41,24 @@
             Entry timeLeader = await _context.Entries.Include(i => i.User).Where(w => w.StageId == stage.Id && w.Approved == true && w.Deleted == false)
                             .OrderByDescending(o => o.SurvivedTime).FirstOrDefaultAsync();
 
-            TickerInfo ticker = new TickerInfo
+            if(goldLeader != null && killLeader != null && levelLeader != null && timeLeader != null)
             {
-                Stage = stage.Name,
-                GoldLeader = goldLeader.User.DisplayName,
-                KillsLeader = killLeader.User.DisplayName,
-                LevelLeader = levelLeader.User.DisplayName,
-                TimeLeader = timeLeader.User.DisplayName,
-                Gold = goldLeader.Gold.ToString(),
-                Kills = killLeader.Kills.ToString(),
-                Level = levelLeader.Level.ToString(),
-                Time = timeLeader.SurvivedTime.ToString().Replace(".", ":"),
-            };
-            tickerInfo.Add(ticker);
+                TickerInfo ticker = new TickerInfo
+                {
+                    Stage = stage.Name,
+                    GoldLeader = goldLeader.User.DisplayName,
+                    KillsLeader = killLeader.User.DisplayName,
+                    LevelLeader = levelLeader.User.DisplayName,
+                    TimeLeader = timeLeader.User.DisplayName,
+                    Gold = goldLeader.Gold.ToString(),
+                    Kills = killLeader.Kills.ToString(),
+                    Level = levelLeader.Level.ToString(),
+                    Time = timeLeader.SurvivedTime.ToString().Replace(".", ":"),
+                };
+                tickerInfo.Add(ticker);
+            }
+
+
         }
         TickerCode(tickerInfo);
     }

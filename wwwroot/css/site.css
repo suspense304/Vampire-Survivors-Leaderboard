@@ -1,5 +1,47 @@
 @import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
 
+ol {
+    counter-reset: item;
+}
+
+    ol > li {
+        counter-increment: item;
+    }
+
+    ol ol > li {
+        display: block;
+    }
+
+        ol ol > li:before {
+            content: counters(item, ".") ". ";
+            margin-left: 20px;
+        }
+
+
+.mud-drawer-content {
+    background-color: #424242ff !important;
+    color: #fff !important;
+    height: 100%;
+}
+
+    .mud-drawer-content a:active {
+        color: #fff;
+    }
+    .mud-drawer-content a:visited {
+        color: #fff;
+    }
+    .mud-drawer-content a:link {
+        color: #fff;
+    }
+    .mud-drawer-content a {
+        color: #fff;
+    }
+    .mud-nav-link.active:not(.mud-nav-link-disabled){
+        color: #fff;
+    }
+.active {
+    background-color: #424242ff !important;
+}
 .AppLink a {
     color: white !important;
 }

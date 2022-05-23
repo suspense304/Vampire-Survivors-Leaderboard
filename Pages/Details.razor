@@ -4,7 +4,9 @@
 @using Microsoft.AspNetCore.WebUtilities;
 @using Models
 @using System.Security.Claims
+@using Data
 
+@inject PageTitle _pageTitle
 @inject vswebsiteContext _context
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
@@ -21,11 +23,10 @@
     }
     else
     {
-        <h2>@entry.Stage.Name</h2>
+        <h2>@entry.Stage.Name @if (isLimitless) { <b>LIMITLESS</b> }</h2>
         <br />
         <hr />
         <br />
-
         <div>
             <div class="detailRow" style="width: 900px;">
                 <div class="detailCol">
@@ -50,6 +51,9 @@
                         }
                     </div>
                 </div>
+            </div>
+            <div style="width: 900px;background-color: #424242ff; color: white;">
+                <span>If video doesn't load try <a href="@entry.Video" style="color: white;">Clicking Here</a></span>
             </div>
             <div class="detailRow" style="width: 900px;">
                 <div class="detailCol">
@@ -112,6 +116,7 @@
 @code {
     bool isAdmin;
     bool submittedUser;
+    bool isLimitless = false;
 
     List<Entry> entries = new List<Entry>();
     Entry entry;
@@ -128,6 +133,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _pageTitle.SetTitle("Run Details");
         var authState = await authenticationStateTask;
         var user = authState.User;
         var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -151,13 +157,32 @@
                 submittedUser = (entry.UserId == chkUser.Id) ? true : false;
             }
 
-            rank = entries.IndexOf(entry) + 1;
-            maxRank = entries.Count;
+            if (entry.Limitless)
+            {
+                rank = 0;
+                maxRank = 0;
+            } else
+            {
+                rank = entries.IndexOf(entry) + 1;
+                maxRank = entries.Count;
+            }
+
 
             entries = entries.Where(w => w.CharacterId == entry.CharacterId).ToList();
 
-            characterRank = entries.IndexOf(entry) + 1;
-            characterMaxRank = entries.Count;
+            if (entry.Limitless)
+            {
+                characterRank = 0;
+                characterMaxRank = 0;
+            }
+            else
+            {
+                characterRank = entries.IndexOf(entry) + 1;
+                characterMaxRank = entries.Count;
+            }
+
+            isLimitless = (entry.Limitless) ? true : false;
+
         }
     }
 
