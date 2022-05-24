@@ -30,7 +30,7 @@
 <div style="width: 100%; text-align: center;"><h2>Newest Submissions</h2></div>
 <div class="dashboardItem">
     <div class="profileContent" style="box-shadow: 0px 2px 3px 1px rgba(0,0,0,0.59);">
-        <MudTable Items="@entries" Dense="true" Hover="true" FixedHeader="true">
+        <MudTable Items="@recentSubmissions" Dense="true" Hover="true" FixedHeader="true">
             <HeaderContent>
                 <MudTh>User</MudTh>
                 <MudTh>Character</MudTh>
@@ -61,8 +61,11 @@
 
 	static readonly List<int> pointsAwarded = new List<int> { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
 	bool isAdmin;
-	List<Entry> entries = new List<Entry>();
+	List<Entry> recentSubmissions = new List<Entry>();
 	List<CompositeStats> topPlayers = new List<CompositeStats>();
+
+	static readonly string thickSeparator = new string('=', 15);
+	static readonly string thinSeparator = new string('-', 15);
 
 	[CascadingParameter]
 	private Task<AuthenticationState> authenticationStateTask { get; set; }
@@ -76,8 +79,23 @@
 		if (chkUser != null) isAdmin = chkUser.Admin;
 
 		int topN = 10;
-		entries = await GetRecentSubmissions();
-		topPlayers = CalculatePoints(topN);
+		recentSubmissions = await GetRecentSubmissions();
+		var stages = _context.Stages.ToList();
+
+		// Main brunt of work. Add profiling around here as it's an important piece.
+		// CalculatePoints itself has some internal profiling as well.
+		Debug.WriteLine(thickSeparator);
+		var profileCalculatePoints = Stopwatch.StartNew();
+
+		topPlayers = CalculatePoints(topN, stages);
+
+		profileCalculatePoints.Stop();
+		Debug.WriteLine(thinSeparator);
+		DebugDumpProfiles(new Dictionary<string, TimeSpan>
+		{
+			{ "Total: Calculate points", profileCalculatePoints.Elapsed }
+		});
+		Debug.WriteLine(thickSeparator);
 	}
 
 	private List<Entry> RemoveDupes(List<Entry> records)
@@ -98,8 +116,6 @@
 
 	private async Task<List<Entry>> GetRecentSubmissions()
 	{
-		var profile = Stopwatch.StartNew();
-
 		var entries = await _context.Entries
 			.Include(i => i.User)
 			.Include(i => i.Stage)
@@ -109,86 +125,110 @@
 			.Take(10)
 			.ToListAsync();
 
-		profile.Stop();
-		Debug.WriteLine($"GetRecentSubmissions: {profile.Elapsed}");
-
 		return entries;
 	}
-
-	// TODO: Cache (user, record) stats. Update stats for a user upon submission. Retrieve data from cache and fallback to database.
-	// TODO: Balance fallback against individual vs. all?
-	// TODO: Perhaps, upon app initialization it populates the cache. Trade startup time for better lifetime performance?
-	private List<CompositeStats> CalculatePoints(int topN)
+	private List<CompositeStats> CalculatePoints(int topN, List<Stage> stages)
 	{
-		var profile = Stopwatch.StartNew();
+		Stopwatch profileGetStageEntries = new Stopwatch();
+		Stopwatch profileCreateRecords = new Stopwatch();
+		Stopwatch profileTallies = new Stopwatch();
 
 		List<Entry> records = new List<Entry>();
 		Dictionary<User, int> playerPoints = new Dictionary<User, int>();
-		var stages = _context.Stages.ToList();
+
 		int stageCount = stages.Count;
 
-		for (int stageID = 1; stageID < stageCount + 1; stageID++)
+		for (int stageId = 1; stageId < stageCount + 1; stageId++)
 		{
-			var killRecords = GetRecords(stageID, entry => entry.Kills, topN);
-			var goldRecords = GetRecords(stageID, entry => entry.Gold, topN);
-			var levelRecords = GetRecords(stageID, entry => entry.Level, topN);
-			var timeRecords = GetRecords(stageID, entry => entry.SurvivedTime, topN);
+			//Trace.WriteLine($"========Stage: {stages[stageID-1].Name}");
 
-			//DebugDumpTopNRecords(stages[stageID-1], killRecords, "Kills", entry => entry.Kills);
-			//DebugDumpTopNRecords(stages[stageID-1], goldRecords, "Gold", entry => entry.Gold);
-			//DebugDumpTopNRecords(stages[stageID-1], levelRecords, "Level", entry => entry.Level);
-			//DebugDumpTopNRecords(stages[stageID-1], timeRecords, "Time", entry => entry.SurvivedTime);
+			// TODO: Stage selection may not scale well as people continue to submit entries.
+			// TODO: Ideally, we could pass some more criteria to help limit the growth of what would be returned here,
+			// TODO: but I have not yet looked at all the properties we have and what we could join against to offload work to the DB
+			// TODO: before bringing data back to client-side.
+			profileGetStageEntries.Start();
+			var allStageEntries = _context.Entries.Include(i => i.User)
+				.Where(entry => entry.StageId == stageId && entry.Approved == true && entry.Deleted == false)
+				.ToList();
+			profileGetStageEntries.Stop();
 
-			AddTally(killRecords, topN, playerPoints);
-			AddTally(goldRecords, topN, playerPoints);
-			AddTally(levelRecords, topN, playerPoints);
-			AddTally(timeRecords, topN, playerPoints);
+			profileCreateRecords.Start();
+			var killRecords = CreateRecords(stageId, allStageEntries, "Kills", entry => entry.Kills).Take(topN).ToList();
+			var goldRecords = CreateRecords(stageId, allStageEntries, "Gold", entry => entry.Gold).Take(topN).ToList();
+			var levelRecords = CreateRecords(stageId, allStageEntries, "Level", entry => entry.Level).Take(topN).ToList();
+			var timeRecords = CreateRecords(stageId, allStageEntries, "Time", entry => entry.SurvivedTime).Take(topN).ToList();
+			profileCreateRecords.Stop();
+
+			//DebugDumpTopNRecords(stages[stageId-1], killRecords, "Kills", entry => entry.Kills);
+			//DebugDumpTopNRecords(stages[stageId-1], goldRecords, "Gold", entry => entry.Gold);
+			//DebugDumpTopNRecords(stages[stageId-1], levelRecords, "Level", entry => entry.Level);
+			//DebugDumpTopNRecords(stages[stageId-1], timeRecords, "Time", entry => entry.SurvivedTime);
+
+			profileTallies.Start();
+			AddTally(killRecords, playerPoints);
+			AddTally(goldRecords, playerPoints);
+			AddTally(levelRecords, playerPoints);
+			AddTally(timeRecords, playerPoints);
+			profileTallies.Stop();
 		}
 
+		var profileGetTopPlayers = Stopwatch.StartNew();
 		var topPlayers = (from playerResult in playerPoints
-			orderby playerResult.Value descending
-			select new CompositeStats
+								orderby playerResult.Value descending
+								select new CompositeStats
 			{
 				User = playerResult.Key,
 				Points = playerResult.Value
 			})
 			.Take(topN)
 			.ToList();
+		profileGetTopPlayers.Stop();
 
-		profile.Stop();
-		Debug.WriteLine($"CalculatePoints: {profile.Elapsed}");
+		DebugDumpProfiles(new Dictionary<string, TimeSpan>
+		{
+			{ "Step: Get stage entries", profileGetStageEntries.Elapsed },
+			{ "Step: Create records", profileCreateRecords.Elapsed },
+			{ "Step: Tallies", profileTallies.Elapsed },
+			{ "Step: Get top players", profileGetTopPlayers.Elapsed }
+		});
 
-        return topPlayers;
-    }
+		return topPlayers;
+	}
 
-	List<Entry> GetRecords<T>(int stageId, Func<Entry, T> statSelector, int topN)
+	/// <summary>
+	/// Creates records for a given stage and stat.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <param name="stageId"></param>
+	/// <param name="stat"></param>
+	/// <param name="statSelector"></param>
+	/// <returns></returns>
+	IEnumerable<Entry> CreateRecords<T>(int stageId, List<Entry> allStageEntries, string stat, Func<Entry, T> statSelector)
 	{
-		return _context.Entries.Include(i => i.User)
-			.Where(w => w.StageId == stageId && w.Approved == true && w.Deleted == false)
-			// TODO: Not sure how well this would scale if there were tons of users, but for now it has to be client-side
-			// TODO: loading before performing grouping, etc.
-			.AsEnumerable()
+		var records = allStageEntries
 			.GroupBy(
 				entry => entry.UserId,
 				(userId, group) => group.OrderByDescending(statSelector).First()
 			)
 			.OrderByDescending(statSelector)
-			// TODO: These following sorts are probably needed for accuracy and consistency, but they also add ~5 seconds, which
-			// TODO: eats away the ~3 seconds of gain found through refactoring.
-			// TODO: I've left them off simply because they were not present in the original. I don't want to make the call :).
-			//.ThenByDescending(entry => entry.DateSubmitted)
-			// TODO: Not sure how this behaves with unicode names and the like
-			//.ThenBy(entry => entry.User.Name)
-			.Take(topN)
-			.ToList();
+			// These following sorts are needed for accuracy and consistency.
+			.ThenByDescending(entry => entry.DateSubmitted)
+			// TODO: Not sure how this behaves with unicode names and the like, but it should prove consistent at the least.
+			.ThenBy(entry => entry.User.Name);
+
+		return records;
 	}
 
-	// Preconditions: entries != null, entry.Count > 0, topN > 0
-	void AddTally(List<Entry> entries, int topN, Dictionary<User, int> playerPoints)
+	/// <summary>
+	/// Handles adding points for a user based on their rank within the set of ordered entries.
+	/// </summary>
+	/// <param name="entries">A list of entries whose length is already clamped to the desired amount, such as the topN relevant entries.</param>
+	/// <param name="playerPoints">A dictionary containing a user key and the points accumulate for that user.</param>
+	void AddTally(List<Entry> entries, Dictionary<User, int> playerPoints)
 	{
-		for(int idx = 0; idx < topN; idx++)
+		foreach(var (entry, idx) in entries.Select((entry, idx) => (entry, idx)))
 		{
-			var user = entries[idx].User;
+			var user = entry.User;
 			if (user != null)
 			{
 				if (playerPoints.ContainsKey(user))
@@ -221,6 +261,15 @@
 		}
 		Debug.WriteLine($"===================");
 	}
+
+	void DebugDumpProfiles(Dictionary<string, TimeSpan> profileResults)
+	{
+		var offset = profileResults.Max(x => x.Key.Length);
+		var formattedProfileEntry = "{0,-" + offset + "}\t{1}";
+
+		foreach(var (step, result) in profileResults)
+		{
+			Debug.WriteLine(formattedProfileEntry, step, result);
+		}
+	}
 }
-
-
