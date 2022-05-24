@@ -153,10 +153,10 @@
 			profileGetStageEntries.Stop();
 
 			profileCreateRecords.Start();
-			var killRecords = CreateRecords(stageId, allStageEntries, "Kills", entry => entry.Kills).Take(topN).ToList();
-			var goldRecords = CreateRecords(stageId, allStageEntries, "Gold", entry => entry.Gold).Take(topN).ToList();
-			var levelRecords = CreateRecords(stageId, allStageEntries, "Level", entry => entry.Level).Take(topN).ToList();
-			var timeRecords = CreateRecords(stageId, allStageEntries, "Time", entry => entry.SurvivedTime).Take(topN).ToList();
+			var killRecords = CreateRecords(allStageEntries, entry => entry.Kills).Take(topN).ToList();
+			var goldRecords = CreateRecords(allStageEntries, entry => entry.Gold).Take(topN).ToList();
+			var levelRecords = CreateRecords(allStageEntries, entry => entry.Level).Take(topN).ToList();
+			var timeRecords = CreateRecords(allStageEntries, entry => entry.SurvivedTime).Take(topN).ToList();
 			profileCreateRecords.Stop();
 
 			//DebugDumpTopNRecords(stages[stageId-1], killRecords, "Kills", entry => entry.Kills);
@@ -199,11 +199,10 @@
 	/// Creates records for a given stage and stat.
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
-	/// <param name="stageId"></param>
 	/// <param name="stat"></param>
 	/// <param name="statSelector"></param>
 	/// <returns></returns>
-	IEnumerable<Entry> CreateRecords<T>(int stageId, List<Entry> allStageEntries, string stat, Func<Entry, T> statSelector)
+	IEnumerable<Entry> CreateRecords<T>(List<Entry> allStageEntries, Func<Entry, T> statSelector)
 	{
 		var records = allStageEntries
 			.GroupBy(
