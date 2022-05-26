@@ -191,187 +191,155 @@ else
 
 
 @code {
-    List<ProfileStats> entries = new List<ProfileStats>();
-    public List<StageRankings> rankings = new List<StageRankings>();
-    List<Entry> records = new List<Entry>();
+	// TODO: Note to self: Records should only be in relation to the top records for a person.
+	// TODO: It should not be like an arcade where a user could hold different places in the score list.
 
-    Helpers _helper = new Helpers();
-    StageRankings overall = new StageRankings();
-    User user;
+	List<ProfileStats> entries = new List<ProfileStats>();
+	public List<StageRankings> rankings = new List<StageRankings>();
+	List<Entry> records = new List<Entry>();
 
-    bool Loading = true;
+	Helpers _helper = new Helpers();
+	StageRankings overall = new StageRankings();
+	User user;
 
-    public class TotalRuns
-    {
-        public string StageName { get; set; }
-        public int Runs { get; set; }
-    }
+	bool Loading = true;
 
-    public class ProfileStats
-    {
-        public string StageName { get; set; }
-        public int Kills { get; set; }
-        public int Gold { get; set; }
-        public int Level { get; set; }
-        public double TimeSurvived { get; set; }
-        public string KillsPlace { get; set; }
-        public string GoldPlace { get; set; }
-        public string LevelPlace { get; set; }
-        public string TimePlace { get; set; }
-    }
+	public class TotalRuns
+	{
+		public string StageName { get; set; }
+		public int Runs { get; set; }
+	}
 
-    protected override async Task OnInitializedAsync()
-    {
-        _pageTitle.SetTitle("Profile");
-        List<Stage> stages = await _context.Stages.ToListAsync();
-        int stageCount = stages.Count;
+	public class ProfileStats
+	{
+		public string StageName { get; set; }
+		public int Kills { get; set; }
+		public int Gold { get; set; }
+		public int Level { get; set; }
+		public double TimeSurvived { get; set; }
+		public string KillsPlace { get; set; }
+		public string GoldPlace { get; set; }
+		public string LevelPlace { get; set; }
+		public string TimePlace { get; set; }
+	}
 
-        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
-        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("id", out var _id))
-        {
-            user = await _context.Users.Where(w => w.Id == Convert.ToInt32(_id)).FirstOrDefaultAsync();
+	protected override async Task OnInitializedAsync()
+	{
+		_pageTitle.SetTitle("Profile");
+		List<Stage> stages = await _context.Stages.ToListAsync();
+		int stageCount = stages.Count;
 
-            if (Convert.ToInt32(_id) > 0)
-            {
-                for (int i = 1; i < stageCount + 1; i++)
-                {
-                    ProfileStats stats = new ProfileStats();
-                    List<Entry> entryList = await _context.Entries.Where(w => w.StageId == i &&
-                        w.UserId == user.Id && w.Approved == true && w.Deleted == false)
-                        .OrderByDescending(o => o.Gold)
-                        .ToListAsync();
-                    if (entryList.Count > 0)
-                    {
-                        Stage currentStage = await _context.Stages.Where(w => w.Id == i).FirstAsync();
-                        stats.StageName = currentStage.Name;
+		var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+		if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("id", out var _id))
+		{
+			user = await _context.Users.Where(w => w.Id == Convert.ToInt32(_id)).FirstOrDefaultAsync();
 
-                        // Get Gold Value
-                        var goldRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
-                            .OrderByDescending(o => o.Gold)
-                            .ToList()
-                            .GroupBy(g => (g.UserId))
-                            .Select(s => s.First()).ToList();
+			if (user != null)
+			{
+				var allEntries = _context.Entries.Include(entry => entry.User)
+					.Where(entry =>
+							entry.Approved == true && entry.Deleted == false
+							&& entry.Limitless == false
+					)
+					.ToList();
 
-                        if (entryList != null && entryList.Count > 0)
-                        {
-                            stats.Gold = entryList.Max(m => m.Gold);
-                            stats.GoldPlace = _helper.GetOrdinalSuffix((goldRecords.FindIndex(i => i.UserId == user.Id)) + 1);
-                        }
-                        else
-                        {
-                            stats.Gold = 0;
-                            stats.GoldPlace = "NA";
-                        }
+				for (int stageId = 1; stageId < stageCount + 1; stageId++)
+				{
+					ProfileStats stats = new ProfileStats();
+
+					//var allStageEntries = _context.Entries.Include(entry => entry.User)
+					//	.Where(entry => entry.StageId == stageId
+					//		&& entry.Approved == true && entry.Deleted == false
+					//		&& entry.Limitless == false
+					//	)
+					//	.ToList();
+					var allStageEntries = allEntries
+						.Where(entry => entry.StageId == stageId)
+						.ToList();
+
+					var currentStage = stages.First(stage => stage.Id == stageId);
+					stats.StageName = currentStage.Name;
+
+					if(allStageEntries.Count > 0)
+					{
+						var (bestKillsRecord, bestKillsRank) = BestRecord(allStageEntries, user.Id, entry => entry.Kills);
+						var (bestGoldRecord, bestGoldRank) = BestRecord(allStageEntries, user.Id, entry => entry.Gold);
+						var (bestLevelRecord, bestLevelRank) = BestRecord(allStageEntries, user.Id, entry => entry.Level);
+						var (bestTimeRecord, bestTimeRank) = BestRecord(allStageEntries, user.Id, entry => entry.SurvivedTime);
+
+						stats.Kills = bestKillsRecord?.Kills ?? 0;
+						stats.KillsPlace = _helper.GetOrdinalSuffix(bestKillsRank);
+
+						stats.Gold = bestGoldRecord?.Gold ?? 0;
+						stats.GoldPlace = _helper.GetOrdinalSuffix(bestGoldRank);
+
+						stats.Level = bestLevelRecord?.Level ?? 0;
+						stats.LevelPlace = _helper.GetOrdinalSuffix(bestLevelRank);
+
+						// TODO: How come time is a double instead of a TimeSpan?
+						stats.TimeSurvived = Convert.ToDouble(bestTimeRecord?.SurvivedTime ?? 0m);
+						stats.TimePlace = _helper.GetOrdinalSuffix(bestTimeRank);
+
+						entries.Add(stats);
+					}
+
+					rankings.Add(_helper.GetStageRanking(currentStage.Name, allStageEntries, user));
+				}
+				
+				var newOverall = _helper.GetOverallRanking(user, allEntries, stages);
+			}
+
+			//foreach (Stage stage in stages)
+			//{
+			//	rankings.Add(_helper.GetStageRanking(stage.Id, user));
+			//};
+
+			overall = _helper.GetTotalRanking(user);
+
+			Loading = false;
+			StateHasChanged();
+		}
+
+	}
+
+	private async Task<List<Entry>> RemoveDupes(List<Entry> records)
+	{
+		if (records != null && records.Count > 0)
+		{
+			Dictionary<User, int> nameCheck = new Dictionary<User, int>();
+			List<Entry> newList = new List<Entry>();
+			for (int i = 0; i < records.Count; i++)
+			{
+				if (!nameCheck.ContainsKey(records[i].User))
+				{
+					Entry newEntry = await _context.Entries.Where(w => w.Id == records[i].Id).FirstAsync();
+					newList.Add(newEntry);
+					nameCheck.Add(records[i].User, records[i].Id);
+				}
+			}
+			return newList;
+		}
+		return new List<Entry>();
+	}
 
 
-                        // Get Kill Value
-                        entryList = await _context.Entries.Where(w => w.StageId == i &&
-                        w.UserId == user.Id && w.Approved == true && w.Deleted == false && w.Limitless == false)
-                        .OrderByDescending(o => o.Kills)
-                        .ToListAsync();
+	public (Entry, int?) BestRecord<T>(List<Entry> allStageEntries, int userId, Func<Entry, T> statSelector)
+	{
+		// We'll start by ordering all our entries by the stat we're interested in.
+		// Then, we just find the first entry corresponding to the given user.
+		// Since this is an ordered list now, the index corresponds to their rank.
 
-                        var killsRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
-                            .OrderByDescending(o => o.Kills)
-                            .ToList()
-                            .GroupBy(g => (g.UserId))
-                            .Select(s => s.First()).ToList();
+		var orderedStageEntries = allStageEntries
+			.OrderByDescending(statSelector)
+			.ToList();
 
-                        if (entryList != null && entryList.Count > 0)
-                        {
-                            stats.Kills = entryList.Max(m => m.Kills);
-                            stats.KillsPlace = _helper.GetOrdinalSuffix((killsRecords.FindIndex(i => i.UserId == user.Id)) + 1);
-                        }
-                        else
-                        {
-                            stats.Kills = 0;
-                            stats.KillsPlace = "NA";
-                        }
+		var userBestRecordIdx = orderedStageEntries.FindIndex(entry => entry.UserId == userId);
+		if (userBestRecordIdx >= 0)
+		{
+			var userBestRecord = orderedStageEntries.ElementAt(userBestRecordIdx);
+			return (userBestRecord, userBestRecordIdx + 1);
+		}
 
-                        // Get Level Value
-                        entryList = await _context.Entries.Where(w => w.StageId == i &&
-                        w.UserId == user.Id && w.Approved == true && w.Deleted == false && w.Limitless == false)
-                        .OrderByDescending(o => o.Level)
-                        .ToListAsync();
-
-                        var levelRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
-                            .OrderByDescending(o => o.Level)
-                            .ToList()
-                            .GroupBy(g => (g.UserId))
-                            .Select(s => s.First()).ToList();
-
-                        if (entryList != null && entryList.Count > 0)
-                        {
-                            stats.Level = entryList.Max(m => m.Level);
-                            stats.LevelPlace = _helper.GetOrdinalSuffix((levelRecords.FindIndex(i => i.UserId == user.Id)) + 1);
-                        }
-                        else
-                        {
-                            stats.Level = 0;
-                            stats.LevelPlace = "NA";
-                        }
-
-                        // Get Time Value
-                        entryList = await _context.Entries.Where(w => w.StageId == i &&
-                        w.UserId == user.Id && w.Approved == true && w.Deleted == false && w.Limitless == false)
-                        .OrderByDescending(o => o.SurvivedTime)
-                        .ToListAsync();
-
-                        var timeRecords = _context.Entries
-                            .Where(w => w.StageId == i && w.Approved == true && w.Deleted == false && w.Limitless == false)
-                            .OrderByDescending(o => o.SurvivedTime)
-                            .ToList()
-                            .GroupBy(g => (g.UserId))
-                            .Select(s => s.First()).ToList();
-
-                        if (entryList != null && entryList.Count > 0)
-                        {
-                            stats.TimeSurvived = Convert.ToDouble(entryList.Max(m => m.SurvivedTime));
-                            stats.TimePlace = _helper.GetOrdinalSuffix((timeRecords.FindIndex(i => i.UserId == user.Id)) + 1);
-                        }
-                        else
-                        {
-                            stats.TimeSurvived = 0;
-                            stats.TimePlace = "NA";
-                        }
-
-                        entries.Add(stats);
-                    }
-                }
-            }
-
-            foreach (Stage stage in stages)
-            {
-                rankings.Add(_helper.GetStageRanking(stage.Id, user));
-            };
-
-            overall = _helper.GetTotalRanking(user);
-
-            Loading = false;
-            StateHasChanged();
-        }
-
-    }
-
-    private async Task<List<Entry>> RemoveDupes(List<Entry> records)
-    {
-        if (records != null && records.Count > 0)
-        {
-            Dictionary<User, int> nameCheck = new Dictionary<User, int>();
-            List<Entry> newList = new List<Entry>();
-            for (int i = 0; i < records.Count; i++)
-            {
-                if (!nameCheck.ContainsKey(records[i].User))
-                {
-                    Entry newEntry = await _context.Entries.Where(w => w.Id == records[i].Id).FirstAsync();
-                    newList.Add(newEntry);
-                    nameCheck.Add(records[i].User, records[i].Id);
-                }
-            }
-            return newList;
-        }
-        return new List<Entry>();
-    }
+		return (null, null);
+	}
 }
