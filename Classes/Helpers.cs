@@ -198,12 +198,6 @@ namespace Vampire_Survivors_Leaderboard.Classes
 			// Note: We're using allStageEntries as populated by an external source. It assumes you have all the filters setup how ya want.
 			// Note: If you want Limitless included, for instance, you'd have to make sure the filter initially used is correct.
 
-			// So basically, we need to figure out the total points for all the users on this stage
-			// Then sort users by their total points
-			// And then get their index in that sorted list
-			// And that corresponds to their rank
-			// What about ties?
-
 			int topN = 10;
 			var awardedPoints = new Dictionary<User, int>
 			{
@@ -212,45 +206,18 @@ namespace Vampire_Survivors_Leaderboard.Classes
 				{ user, 0 }
 			};
 
-			// Ranking are driven by stats that get into the top 10 (the original code only considered the top 10 entries for a (stage, stat) combo.
-			// So, when we get best records for a given user, we will discard any record that falls below that benchmark.
-			// Each record that remains is then translated into points which are accumulated for the user.
+			var topNKillsRecords = GetTopRanks(entry => entry.Kills, topN, allStageEntries).Take(topN).ToList();
+			var topNGoldRecords = GetTopRanks(entry => entry.Gold, topN, allStageEntries).Take(topN).ToList();
+			var topNLevelRecords = GetTopRanks(entry => entry.Level, topN, allStageEntries).Take(topN).ToList();
+			var topNTimeRecords = GetTopRanks(entry => entry.SurvivedTime, topN, allStageEntries).Take(topN).ToList();
 
-			// TODO: I don't really want to iterate across every single user.
-			// TODO: I want to find if the user is in the top 10 for any stat.
-			// TODO: So, I should be able to sort my entries, take the top N, look for the user, get the rank, and convert to points.
+			AddTally(topNKillsRecords, awardedPoints);
+			AddTally(topNGoldRecords, awardedPoints);
+			AddTally(topNLevelRecords, awardedPoints);
+			AddTally(topNTimeRecords, awardedPoints);
 
-			var topNKillRecords = allStageEntries.OrderByDescending(entry => entry.Kills).Take(topN).ToList();
-			var topNGoldRecords = allStageEntries.OrderByDescending(entry => entry.Gold).Take(topN).ToList();
-			var topNLevelRecords = allStageEntries.OrderByDescending(entry => entry.Level).Take(topN).ToList();
-			var topNTimeRecords = allStageEntries.OrderByDescending(entry => entry.SurvivedTime).Take(topN).ToList();
-
-			for(int idx = 0; idx < topN; idx++)
-			{
-				// The index for this actually corresponds to the zero-based rank.
-				// So, we can just grab the user and award points based on the index.
-
-				// The base points for a given index is always gonna be the same, regardless of stat consideration.
-				var points = pointsAwarded[idx];
-
-				// Our records are already sorted by their rank (index == zero-based rank).
-				// Therefore, we're just going through each rank and asking who achieved that rank for that stat.
-				var killRecord = topNKillRecords[idx];
-				var goldRecord = topNGoldRecords[idx];
-				var levelRecord = topNLevelRecords[idx];
-				var timeRecord = topNTimeRecords[idx];
-
-				// Now, for those ranked entries, we grab the user and award points to them.
-				// We don't care yet about WHO the user is.
-				CreateOrUpdate(killRecord.User, points, awardedPoints);
-				CreateOrUpdate(goldRecord.User, points, awardedPoints);
-				CreateOrUpdate(levelRecord.User, points, awardedPoints);
-				CreateOrUpdate(timeRecord.User, points, awardedPoints);
-			}
-
-
-			// Now, sort this dang points dictionary, find OUR user, and grab their points
-			var (_, rank) = awardedPoints
+			// Now, sort this points dictionary, find OUR user, and grab their points
+			var (_, zeroBasedRank) = awardedPoints
 				// Remember that Value in this case is total points accumulated by a user, which will then be used to figure out
 				// their overall ranking for this stage.
 				.OrderByDescending(kvp => kvp.Value)
@@ -263,11 +230,38 @@ namespace Vampire_Survivors_Leaderboard.Classes
 			return new StageRankings
 			{
 				StageName = stage,
-				Ranking = rank
+				Ranking = zeroBasedRank + 1
 			};
 		}
 
-        public StageRankings GetTotalRanking(User user)
+		// TODO: This is a funky function in that it seems like it's solely focused on the user, but it's actually giving us information
+		// TODO: about the user AND the other users in the topN.
+		List<Entry> GetTopRanks<T>(Func<Entry, T> statSelector, int topN, List<Entry> allStageEntries)
+		{
+			Func<Entry, int?> keySelector = entry => entry?.UserId;
+			Func<Entry, Entry, Func<Entry, T>, int> comparer = (entry1, entry2, statSelector) =>
+			{
+				if(entry1 == null)
+				{
+					return -1;
+				}
+				else if(entry2 == null)
+				{
+					return 1;
+				}
+
+				var comparer = Comparer<T>.Default;
+				var stat1 = statSelector(entry1);
+				var stat2 = statSelector(entry2);
+				return comparer.Compare(stat1, stat2);
+			};
+			var exclusionSorter = new ExclusionSort<Entry, int?, T>(keySelector, comparer);
+			var topRanks = exclusionSorter.Sort(allStageEntries, statSelector);
+
+			return topRanks;
+		}
+
+		public StageRankings GetTotalRanking(User user)
         {
             List<int> pointsAwarded = new List<int> { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
             List<Entry> records = new List<Entry>();
@@ -425,15 +419,9 @@ namespace Vampire_Survivors_Leaderboard.Classes
 
 		public StageRankings GetOverallRanking(User user, List<Entry> allEntries, List<Stage> stages)
 		{
-			// Basically, we do everything we do in GetStageRanking, but we do for all given stages and keep accumulating points.
+			// Basically, we do everything we do in GetStageRanking, but we do it for all given stages and keep accumulating points.
 			// This also probably means there is opportunity for more reuse in here than I have put in
 			// since there is common logic between the two functions.
-
-			// For each stage
-			//	Get the top 10 for that stage
-			// Award points to the users in those sets of entries
-			// Order by points
-			// Select rank
 
 			int topN = 10;
 			var awardedPoints = new Dictionary<User, int>
@@ -445,31 +433,21 @@ namespace Vampire_Survivors_Leaderboard.Classes
 
 			foreach (var stage in stages)
 			{
-				var stageEntries = allEntries.Where(entry => entry.StageId == stage.Id).ToList();
+				var allStageEntries = allEntries.Where(entry => entry.StageId == stage.Id).ToList();
 
-				var topNKillRecords = stageEntries.OrderByDescending(entry => entry.Kills).Take(topN).ToList();
-				var topNGoldRecords = stageEntries.OrderByDescending(entry => entry.Gold).Take(topN).ToList();
-				var topNLevelRecords = stageEntries.OrderByDescending(entry => entry.Level).Take(topN).ToList();
-				var topNTimeRecords = stageEntries.OrderByDescending(entry => entry.SurvivedTime).Take(topN).ToList();
+				var topNKillsRecords = GetTopRanks(entry => entry.Kills, topN, allStageEntries).Take(topN).ToList();
+				var topNGoldRecords = GetTopRanks(entry => entry.Gold, topN, allStageEntries).Take(topN).ToList();
+				var topNLevelRecords = GetTopRanks(entry => entry.Level, topN, allStageEntries).Take(topN).ToList();
+				var topNTimeRecords = GetTopRanks(entry => entry.SurvivedTime, topN, allStageEntries).Take(topN).ToList();
 
-				for (int idx = 0; idx < topN; idx++)
-				{
-					var points = pointsAwarded[idx];
-
-					var killRecord = topNKillRecords[idx];
-					var goldRecord = topNGoldRecords[idx];
-					var levelRecord = topNLevelRecords[idx];
-					var timeRecord = topNTimeRecords[idx];
-
-					CreateOrUpdate(killRecord.User, points, awardedPoints);
-					CreateOrUpdate(goldRecord.User, points, awardedPoints);
-					CreateOrUpdate(levelRecord.User, points, awardedPoints);
-					CreateOrUpdate(timeRecord.User, points, awardedPoints);
-				}
+				AddTally(topNKillsRecords, awardedPoints);
+				AddTally(topNGoldRecords, awardedPoints);
+				AddTally(topNLevelRecords, awardedPoints);
+				AddTally(topNTimeRecords, awardedPoints);
 			}
 
-			// Now, sort this dang points dictionary, find OUR user, and grab their points
-			var (_, rank) = awardedPoints
+			// Now, sort this points dictionary, find OUR user, and grab their points
+			var (_, zeroBasedRank) = awardedPoints
 				// Remember that Value in this case is total points accumulated by a user, which will then be used to figure out
 				// their overall ranking for this stage.
 				.OrderByDescending(kvp => kvp.Value)
@@ -482,7 +460,7 @@ namespace Vampire_Survivors_Leaderboard.Classes
 			return new StageRankings 
 			{ 
 				StageName = "Overall",
-				Ranking = rank
+				Ranking = zeroBasedRank + 1
 			};
 		}
 
@@ -497,6 +475,36 @@ namespace Vampire_Survivors_Leaderboard.Classes
 			else
 			{
 				playerPoints.Add(user, incrementPoints);
+			}
+		}
+
+		/// <summary>
+		/// Handles adding points for a user based on their rank within the set of ordered entries.
+		/// </summary>
+		/// <param name="entries">A list of entries whose length is already clamped to the desired amount, such as the topN relevant entries.</param>
+		/// <param name="playerPoints">A dictionary containing a user key and the points accumulate for that user.</param>
+		void AddTally(List<Entry> entries, Dictionary<User, int> playerPoints)
+		{
+			foreach (var (entry, idx) in entries.Select((entry, idx) => (entry, idx)))
+			{
+				var user = entry.User;
+				if (user != null)
+				{
+					if (playerPoints.ContainsKey(user))
+					{
+						playerPoints[user] += pointsAwarded[idx];
+					}
+					else
+					{
+						playerPoints.Add(user, pointsAwarded[idx]);
+					}
+
+					//Debug.WriteLine(user.Name + " + " + pointsAwarded[idx].ToString());
+				}
+				else
+				{
+					Debug.WriteLine("How the fuck did this happen?");
+				}
 			}
 		}
 	}

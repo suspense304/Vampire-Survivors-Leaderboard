@@ -236,6 +236,8 @@ else
 
 			if (user != null)
 			{
+				// TODO: Hmm, there are various places where we get all entries, so right now, not too concerned.
+				// TODO: But, entries are always growing, so, this could easily become overwhelming with more popularity.
 				var allEntries = _context.Entries.Include(entry => entry.User)
 					.Where(entry =>
 							entry.Approved == true && entry.Deleted == false
@@ -247,12 +249,6 @@ else
 				{
 					ProfileStats stats = new ProfileStats();
 
-					//var allStageEntries = _context.Entries.Include(entry => entry.User)
-					//	.Where(entry => entry.StageId == stageId
-					//		&& entry.Approved == true && entry.Deleted == false
-					//		&& entry.Limitless == false
-					//	)
-					//	.ToList();
 					var allStageEntries = allEntries
 						.Where(entry => entry.StageId == stageId)
 						.ToList();
@@ -286,15 +282,8 @@ else
 					rankings.Add(_helper.GetStageRanking(currentStage.Name, allStageEntries, user));
 				}
 				
-				var newOverall = _helper.GetOverallRanking(user, allEntries, stages);
+				overall = _helper.GetOverallRanking(user, allEntries, stages);
 			}
-
-			//foreach (Stage stage in stages)
-			//{
-			//	rankings.Add(_helper.GetStageRanking(stage.Id, user));
-			//};
-
-			overall = _helper.GetTotalRanking(user);
 
 			Loading = false;
 			StateHasChanged();
