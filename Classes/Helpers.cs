@@ -203,7 +203,7 @@ namespace Vampire_Survivors_Leaderboard.Classes
 			{
 				// We'll set an initial value for our user so that in the event the user didn't get any ranking
 				// we don't need to do yet another ContainsKey check for them.
-				{ user, 0 }
+				//{ user, -1 }
 			};
 
 			var topNKillsRecords = GetTopRanks(entry => entry.Kills, topN, allStageEntries).Take(topN).ToList();
@@ -216,22 +216,33 @@ namespace Vampire_Survivors_Leaderboard.Classes
 			AddTally(topNLevelRecords, awardedPoints);
 			AddTally(topNTimeRecords, awardedPoints);
 
-			// Now, sort this points dictionary, find OUR user, and grab their points
-			var (_, zeroBasedRank) = awardedPoints
-				// Remember that Value in this case is total points accumulated by a user, which will then be used to figure out
-				// their overall ranking for this stage.
-				.OrderByDescending(kvp => kvp.Value)
-				// Because this is now sorted, we can once again say that the ordering corresponds to a zero-based ranking.
-				// So, let's make it easy on ourselves and include the index right now.
-				.Select((kvp, idx) => (kvp, idx))
-				// And finally, we want the rank for the user we were interested in in the first place.
-				.First(x => x.kvp.Key == user);
-
-			return new StageRankings
+			if (awardedPoints.ContainsKey(user))
 			{
-				StageName = stage,
-				Ranking = zeroBasedRank + 1
-			};
+				// Now, sort this points dictionary, find OUR user, and grab their points
+				var (_, zeroBasedRank) = awardedPoints
+					// Remember that Value in this case is total points accumulated by a user, which will then be used to figure out
+					// their overall ranking for this stage.
+					.OrderByDescending(kvp => kvp.Value)
+					// Because this is now sorted, we can once again say that the ordering corresponds to a zero-based ranking.
+					// So, let's make it easy on ourselves and include the index right now.
+					.Select((kvp, idx) => (kvp, idx))
+					// And finally, we want the rank for the user we were interested in in the first place.
+					.First(x => x.Item1.Key == user);
+
+				return new StageRankings
+				{
+					StageName = stage,
+					Ranking = zeroBasedRank + 1
+				};
+			}
+			else
+			{
+				return new StageRankings
+				{
+					StageName = stage,
+					Ranking = 0
+				};
+}			
 		}
 
 		// TODO: This is a funky function in that it seems like it's solely focused on the user, but it's actually giving us information
@@ -428,6 +439,9 @@ namespace Vampire_Survivors_Leaderboard.Classes
 			{
 				// We'll set an initial value for our user so that in the event the user didn't get any ranking
 				// we don't need to do yet another ContainsKey check for them.
+				// TODO: SHOULD NOT BE ZERO. Will get 1 added to it which makes it rank 1 . . .
+				// TODO: But this overall ranking is broken anyway and I need to debug what I did, so . . .
+				// TODO: or the ranking is correct here but not on the dashboard? Well, somewhere there is inconsistency that I have to root out.
 				{ user, 0 }
 			};
 
@@ -457,8 +471,8 @@ namespace Vampire_Survivors_Leaderboard.Classes
 				// And finally, we want the rank for the user we were interested in in the first place.
 				.First(x => x.kvp.Key == user);
 
-			return new StageRankings 
-			{ 
+			return new StageRankings
+			{
 				StageName = "Overall",
 				Ranking = zeroBasedRank + 1
 			};
